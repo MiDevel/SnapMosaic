@@ -1,33 +1,45 @@
 from PySide6.QtWidgets import (
-    QDialog, QVBoxLayout, QHBoxLayout, QLabel, QDialogButtonBox
+    QDialog, QVBoxLayout, QHBoxLayout, QLabel, QDialogButtonBox, QCheckBox
 )
 from PySide6.QtCore import Qt
 from .hotkey import HotkeyInput
 
 class SettingsDialog(QDialog):
-    def __init__(self, current_hotkey, parent=None):
+    def __init__(self, config, parent=None):
         super().__init__(parent)
         self.setWindowTitle("Settings")
-        self.new_hotkey = current_hotkey
+        self.config = config
+        self.new_hotkey = self.config.get('hotkey')
 
         layout = QVBoxLayout(self)
-        
+
+        # Hotkey setting
         h_layout = QHBoxLayout()
         h_layout.addWidget(QLabel("Capture Hotkey:"))
-        self.hotkey_input = HotkeyInput(current_hotkey)
+        self.hotkey_input = HotkeyInput(self.new_hotkey)
         self.hotkey_input.key_captured.connect(self.set_new_hotkey)
         h_layout.addWidget(self.hotkey_input)
         layout.addLayout(h_layout)
 
-        layout.addStretch()
+        # Auto-copy setting
+        self.auto_copy_checkbox = QCheckBox("Auto-copy new captures to clipboard")
+        self.auto_copy_checkbox.setChecked(self.config.get('auto_copy_to_clipboard', False))
+        layout.addWidget(self.auto_copy_checkbox)
+
+        layout.addWidget(QLabel(""))
 
         self.button_box = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
-        self.button_box.accepted.connect(self.accept)
+        self.button_box.accepted.connect(self.apply_settings)
         self.button_box.rejected.connect(self.reject)
         layout.addWidget(self.button_box)
 
     def set_new_hotkey(self, hotkey):
         self.new_hotkey = hotkey
+
+    def apply_settings(self):
+        self.config.set('hotkey', self.new_hotkey)
+        self.config.set('auto_copy_to_clipboard', self.auto_copy_checkbox.isChecked())
+        self.accept()
 
 class AboutDialog(QDialog):
     def __init__(self, version, parent=None):
@@ -57,7 +69,7 @@ class AboutDialog(QDialog):
         layout.addWidget(github_label)
         layout.addWidget(QLabel("License: MIT with attribution required"))
 
-        layout.addStretch()
+        layout.addWidget(QLabel(""))
 
         buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok)
         buttons.accepted.connect(self.accept)

@@ -51,4 +51,5 @@ env/
 .vscode/
 
 # Project specific
-config.json
+SnapMosaic.json
+
