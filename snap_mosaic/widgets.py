@@ -4,6 +4,8 @@ from PySide6.QtWidgets import (
 from PySide6.QtGui import QPainter, QColor, QPen, QPainterPath, QIcon
 from PySide6.QtCore import Qt, QRect, Signal
 
+from .utils import resource_path
+
 class SelectionOverlay(QWidget):
     selection_made = Signal(QRect)
 
@@ -126,7 +128,7 @@ class HoverLabel(QLabel):
 
             # Draw icons
             style = self.style()
-            copy_icon = QIcon("snap_mosaic/icons/clipboard.svg")
+            copy_icon = QIcon(resource_path("snap_mosaic/icons/clipboard.svg"))
             save_icon = style.standardIcon(QStyle.StandardPixmap.SP_DialogSaveButton)
             delete_icon = style.standardIcon(QStyle.StandardPixmap.SP_MessageBoxCritical)
 

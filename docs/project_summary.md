@@ -58,10 +58,12 @@ The application was refactored from a single-file script into a modular package 
 ### Configuration
 
 - A simple `SnapMosaic.json` file stores persistent settings.
-- **Stored Values**: 
+- **Stored Values**:
     - The `(x, y, width, height)` of the last capture region
     - The string representation of the hotkey (e.g., `"f7"`)
     - The boolean value of the auto-copy to clipboard option
+    - Auto-save configuration (enabled, location, prefix, suffix, format, quality)
+    - System tray integration (close to tray, show notification)
 
 The configuration is loaded on startup and saved whenever any of the above values is changed.
 
@@ -73,6 +75,19 @@ The configuration is loaded on startup and saved whenever any of the above value
     2.  **Hover Effect**: On `mouseEnterEvent`, the label draws a semi-transparent overlay and reveals "Save" and "Delete" icons in the top-right corner. The icons also provide visual feedback (a highlight tint) and tooltips when hovered over individually.
     3.  **Actions**: Clicking an icon emits a `save_requested` or `delete_requested` signal. The `SnapMosaic` main window has slots connected to these signals to handle the file-saving dialog or remove the widget from the grid.
     4.  **Saved Indicator**: After an image is successfully saved, a boolean flag `is_saved` is set on the `HoverLabel` instance. The `paintEvent` checks this flag and, if true, draws a green checkmark icon with a semi-transparent circular background in the bottom-left corner for persistent, high-visibility feedback.
+
+### System Tray Integration
+
+- **Close Behavior**: Instead of quitting, the application's close button can be configured to hide the main window, leaving the app running in the background and accessible via a system tray icon.
+- **Tray Icon Menu**: A right-click on the tray icon provides a context menu with essential actions: "Show Window," "Define new Region," and "Quit."
+- **Interaction**: A single left-click on the tray icon toggles the visibility of the main window.
+- **Configuration**: This behavior, along with the associated notification, is fully configurable in the settings.
+
+### Asset & Resource Handling
+
+- **Problem**: When an application is bundled with PyInstaller, it runs from a temporary directory. This breaks simple relative paths used during development (e.g., `snap_mosaic/icons/clipboard.svg`), causing "file not found" errors for assets like icons in the final executable.
+- **Solution**: A helper function, `utils.resource_path()`, was created. This function detects whether the application is running from source code or as a bundled executable (by checking for `sys._MEIPASS`, a variable set by PyInstaller). It then constructs the correct, absolute path to the requested resource.
+- **Implementation**: All code that loads an external asset (icons, images) has been refactored to use `resource_path()`. This makes asset loading robust and reliable, ensuring that the application works identically in both development and distributed environments.
 
 ## 5. Final Refinements & UI Polish
 

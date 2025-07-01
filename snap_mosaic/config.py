@@ -46,6 +46,8 @@ class Config:
             'hotkey': 'f7',
             'window_geometry': None,
             'auto_copy_to_clipboard': False,
+            'minimize_to_tray': False,
+            'show_tray_notification': True,
             'auto_save_enabled': False,
             'auto_save_location': default_save_path,
             'auto_save_prefix': 'SnapMosaic',
