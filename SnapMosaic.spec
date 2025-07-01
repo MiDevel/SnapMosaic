@@ -5,7 +5,10 @@ a = Analysis(
     ['main.py'],
     pathex=[],
     binaries=[],
-    datas=[],
+    datas=[
+        ('assets', 'assets'),
+        ('snap_mosaic/icons', 'snap_mosaic/icons')
+    ],
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},

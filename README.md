@@ -2,7 +2,7 @@
 
 A simple and efficient screen capture and review utility, built with Python and PySide6.
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) [![Version](https://img.shields.io/badge/version-1.0.2-blue.svg)](https://github.com/MiDevel/SnapMosaic/releases)
 
 ![SnapMosaic](https://github.com/MiDevel/SnapMosaic/blob/main/assets/SnapMosaic.png?raw=true)
 
@@ -11,11 +11,11 @@ SnapMosaic allows you to define a specific region on your screen and capture it 
 
 ## Features
 
--   **Define Capture Region**: Easily select any area of your screen to capture. The selected region is saved and remembered across sessions.
+-   **Define Capture Region**: Select any area of your screen to capture. The selected region is saved and remembered across sessions.
 -   **Global Hotkey**: Use a system-wide hotkey (`F7` by default) to trigger a capture at any time.
 -   **Configurable Hotkey**: Change the hotkey to your preference in the Settings menu.
 -   **Image Grid**: View all your captures in a scrollable, responsive grid that adjusts to the window size.
--   **Image Management**: Hover over any image in the grid to reveal Save and Delete buttons. Saved images are marked with a checkmark, so you never lose track.
+-   **Image Management**: Hover over any image in the grid to reveal Save and Delete buttons. Saved images are marked with a checkmark.
 -   **Auto-Clear**: The grid automatically clears when you define a new region, ensuring all images in a session are the same size.
 -   **High-DPI Support**: Works correctly on multi-monitor and High-DPI setups.
 

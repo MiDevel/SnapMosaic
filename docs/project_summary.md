@@ -15,17 +15,17 @@ The primary goal was to create a lightweight, easy-to-use screen cross-platform 
 
 ## 3. Core Architecture
 
-The application is built around a few key classes in `main.py`:
+The application was refactored from a single-file script into a modular package (`snap_mosaic`) to improve maintainability and organization. The core classes are now located in their own modules:
 
-- **`SnapMosaic` (QMainWindow)**: The main application class. It manages the primary UI, including the top bar buttons and the image grid. It orchestrates all major functionality, such as initiating region selection, handling configuration, and displaying captured images.
+- **`SnapMosaic` (`main_window.py`)**: The main application `QMainWindow`. It manages the primary UI, orchestrates all major functionality, and handles application state and configuration.
 
-- **`SelectionOverlay` (QWidget)**: A frameless, transparent widget that covers all screens. It displays a static screenshot of the desktop and uses a `QRubberBand` to allow the user to draw the capture region. It emits a `selection_made` signal with the `QRect` of the selected area.
+- **`SelectionOverlay` & `HoverLabel` (`widgets.py`)**: Custom widgets for UI interaction. `SelectionOverlay` handles drawing the capture region, while `HoverLabel` displays captured images and provides interactive save/delete controls.
 
-- **`HotkeyListener` (QObject)**: Runs in a separate `QThread` to listen for global hotkey presses without blocking the UI. It uses `pynput.keyboard.Listener` and emits a `hotkey_pressed` signal when the designated key is pressed.
+- **`HotkeyListener` & `HotkeyInput` (`hotkey.py`)**: Classes responsible for the global hotkey system. `HotkeyListener` uses `pynput` to listen for system-wide key presses, while `HotkeyInput` is the UI widget for setting a new hotkey.
 
-- **`SettingsDialog` (QDialog)**: A modal dialog for application settings. It currently contains the `HotkeyInput` widget to allow users to define a new global hotkey.
+- **`SettingsDialog` & `AboutDialog` (`dialogs.py`)**: Standard `QDialog` subclasses for the settings and about windows.
 
-- **`HotkeyInput` (QPushButton)**: A custom widget that captures the next keypress to set as the new hotkey.
+- **`Config` (`config.py`)**: A simple class to manage loading and saving the `config.json` file.
 
 ## 4. Key Implementation Details & Decisions
 
@@ -47,10 +47,13 @@ The application is built around a few key classes in `main.py`:
 
 ### Global Hotkey Listener
 
-- **Requirement**: A global hotkey that works even when the application is not in focus.
-- **Implementation**: 
-    1.  The `pynput` listener is run inside a `QThread` to prevent it from freezing the GUI.
-    2.  **Hang on Close Fix**: The application initially hung on exit because the listener thread was not being stopped correctly. This was fixed by adding a `stop()` method to the `HotkeyListener` class that calls `pynput.keyboard.Listener.stop()`. The main window's `closeEvent` now calls this method and then `self.hotkey_thread.wait()` to ensure a clean shutdown.
+- **Requirement**: A global hotkey that works even when the application is not in focus, with robust handling for complex key combinations and user feedback on registration success or failure.
+- **Implementation & Evolution**:
+    1.  The implementation was refactored from a manual `pynput.keyboard.Listener` in a `QThread` to using `pynput.keyboard.GlobalHotKeys`. This was done to provide more reliable handling of compound hotkeys.
+    2.  The `GlobalHotKeys` class handles its own non-blocking thread, which simplified the design by removing the need for a dedicated `QThread` and the associated cleanup code (`thread.wait()`).
+    3.  The `HotkeyListener.start()` method attempts to register the hotkey and returns `True` or `False`. This enables the UI to give immediate feedback if a hotkey is already in use and revert to the previous one if needed.
+    4.  To support special keys (like `Insert`, `Home`, `PageUp`), a mapping was added to the `HotkeyInput` widget to translate `Qt.Key` names into `pynput`-compatible strings.
+    5.  **Clean Shutdown**: The main window's `closeEvent` calls the listener's `stop()` method, which correctly terminates the `pynput` listener, preventing the application from hanging on exit.
 
 ### Configuration
 
@@ -66,3 +69,14 @@ The application is built around a few key classes in `main.py`:
     2.  **Hover Effect**: On `mouseEnterEvent`, the label draws a semi-transparent overlay and reveals "Save" and "Delete" icons in the top-right corner. The icons also provide visual feedback (a highlight tint) and tooltips when hovered over individually.
     3.  **Actions**: Clicking an icon emits a `save_requested` or `delete_requested` signal. The `SnapMosaic` main window has slots connected to these signals to handle the file-saving dialog or remove the widget from the grid.
     4.  **Saved Indicator**: After an image is successfully saved, a boolean flag `is_saved` is set on the `HoverLabel` instance. The `paintEvent` checks this flag and, if true, draws a green checkmark icon with a semi-transparent circular background in the bottom-left corner for persistent, high-visibility feedback.
+
+## 5. Final Refinements & UI Polish
+
+The final development phase focused on improving robustness, usability, and visual appeal.
+
+### UI Enhancements & Asset Management
+
+- **Custom Icons**: The standard Qt icons for "Settings" and "About" were replaced with custom white SVG icons to match the application's dark theme.
+- **Application Icon**: A custom application icon (`.ico` on Windows, `.svg` on other platforms) was added. This icon is displayed in the window's title bar and the system taskbar.
+- **Asset Bundling**: The `SnapMosaic.spec` file for PyInstaller was updated to bundle the `assets` and `snap_mosaic/icons` directories. This ensures all icons are included in the standalone executable, making it fully portable.
+- **Image Border**: A subtle 1px border was added via stylesheet to captured images in the grid. This visually separates them from the application background, which is especially helpful when a captured image has edges of a similar color.
