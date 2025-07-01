@@ -4,9 +4,10 @@ import os
 from PySide6.QtWidgets import (
     QApplication, QMainWindow, QWidget,
     QVBoxLayout, QHBoxLayout, QPushButton,
-    QScrollArea, QLabel, QDialog, QDialogButtonBox, QMessageBox, QRubberBand, QGridLayout
+    QScrollArea, QLabel, QDialog, QDialogButtonBox, QMessageBox, QRubberBand, QGridLayout,
+    QFileDialog, QStyle, QToolTip
 )
-from PySide6.QtGui import QPainter, QScreen, QPixmap, QIcon, QImage
+from PySide6.QtGui import QPainter, QScreen, QPixmap, QIcon, QImage, QColor, QPen, QPainterPath
 from PySide6.QtCore import Qt, QRect, Signal, QThread, QObject, QSize, QTimer
 from pynput import keyboard
 
@@ -166,6 +167,122 @@ class SettingsDialog(QDialog):
         self.new_hotkey = hotkey
 
 
+class HoverLabel(QLabel):
+    delete_requested = Signal(object)
+    save_requested = Signal(object)
+
+    def __init__(self, pixmap, parent=None):
+        super().__init__(parent)
+        self.setPixmap(pixmap)
+        self.setFixedSize(pixmap.size())
+        self.is_hovering = False
+        self.is_saved = False
+        self.hovered_icon = None # Can be 'save', 'delete', or None
+
+        # Define "hotspots" for the buttons
+        icon_size = 24
+        margin = 5
+        self.save_rect = QRect(self.width() - 2 * (icon_size + margin), margin, icon_size, icon_size)
+        self.delete_rect = QRect(self.width() - (icon_size + margin), margin, icon_size, icon_size)
+
+        self.setMouseTracking(True) # Needed for mouseMoveEvent
+
+    def enterEvent(self, event):
+        self.is_hovering = True
+        self.update() # Trigger a repaint
+        super().enterEvent(event)
+
+    def leaveEvent(self, event):
+        self.is_hovering = False
+        self.hovered_icon = None
+        QToolTip.hideText()
+        self.update() # Trigger a repaint
+        super().leaveEvent(event)
+
+    def mouseMoveEvent(self, event):
+        if self.is_hovering:
+            pos = event.pos()
+            old_hovered_icon = self.hovered_icon
+
+            if self.save_rect.contains(pos):
+                self.hovered_icon = 'save'
+                QToolTip.showText(event.globalPos(), "Save Image", self)
+            elif self.delete_rect.contains(pos):
+                self.hovered_icon = 'delete'
+                QToolTip.showText(event.globalPos(), "Delete Image", self)
+            else:
+                self.hovered_icon = None
+                QToolTip.hideText()
+
+            if self.hovered_icon != old_hovered_icon:
+                self.update() # Repaint only if hover state changes
+        super().mouseMoveEvent(event)
+
+    def mousePressEvent(self, event):
+        if self.is_hovering:
+            if self.save_rect.contains(event.pos()):
+                # Pass the label instance itself
+                self.save_requested.emit(self)
+            elif self.delete_rect.contains(event.pos()):
+                self.delete_requested.emit(self)
+        super().mousePressEvent(event)
+
+    def paintEvent(self, event):
+        super().paintEvent(event) # First, draw the base pixmap
+
+        # If there's no custom drawing to do, exit early.
+        if not self.is_hovering and not self.is_saved:
+            return
+
+        painter = QPainter(self)
+
+        if self.is_hovering:
+            painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+
+            # Draw semi-transparent overlay and border
+            overlay_color = QColor(0, 0, 0, 127) # Black with 50% opacity
+            painter.fillRect(self.rect(), overlay_color)
+            pen = QPen(QColor("#55aaff"), 2) # Blue border
+            painter.setPen(pen)
+            painter.drawRect(self.rect().adjusted(0, 0, -1, -1))
+
+            # Draw icons
+            style = self.style()
+            save_icon = style.standardIcon(QStyle.StandardPixmap.SP_DialogSaveButton)
+            delete_icon = style.standardIcon(QStyle.StandardPixmap.SP_MessageBoxCritical)
+
+            save_icon.paint(painter, self.save_rect)
+            delete_icon.paint(painter, self.delete_rect)
+
+            # Draw hover effect on icons
+            if self.hovered_icon:
+                hover_color = QColor(255, 255, 255, 70) # White with ~27% opacity
+                if self.hovered_icon == 'save':
+                    painter.fillRect(self.save_rect, hover_color)
+                elif self.hovered_icon == 'delete':
+                    painter.fillRect(self.delete_rect, hover_color)
+
+        if self.is_saved:
+            icon_size = 24
+            margin = 5
+            saved_rect = QRect(margin, self.height() - icon_size - margin, icon_size, icon_size)
+
+            # Draw a background for the checkmark for better visibility
+            # The circle will be slightly larger than the icon
+            bg_rect = saved_rect.adjusted(-margin, -margin, margin, margin)
+            path = QPainterPath()
+            path.addEllipse(bg_rect)
+            
+            # Use a semi-transparent white for the background
+            painter.setBrush(QColor(255, 255, 255, 180))
+            painter.setPen(Qt.PenStyle.NoPen) # No outline for the circle
+            painter.drawPath(path)
+
+            # Now draw the icon on top
+            saved_icon = self.style().standardIcon(QStyle.StandardPixmap.SP_DialogApplyButton)
+            saved_icon.paint(painter, saved_rect)
+
+
 class SnapMosaic(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -207,7 +324,7 @@ class SnapMosaic(QMainWindow):
         self.capture_region = None
         self.config_file = "config.json"
         self.hotkey = 'f7' # Default hotkey
-        self.captured_images = []
+        self.captured_widgets = []
         self.load_config()
         self.update_snap_button_text()
 
@@ -222,6 +339,7 @@ class SnapMosaic(QMainWindow):
         self.resize_timer = QTimer(self)
         self.resize_timer.setSingleShot(True)
         self.resize_timer.timeout.connect(self.redraw_grid)
+
 
     def define_region(self):
         self.clear_grid()
@@ -284,29 +402,45 @@ class SnapMosaic(QMainWindow):
             int(self.capture_region.height() * dpr)
         )
 
-        self.captured_images.append(pixmap)
-
-        # Add to grid
         if not pixmap.isNull():
-            viewport_width = self.scroll_area.viewport().width()
-            image_width = pixmap.width()
-            spacing = self.scroll_layout.spacing()
-            num_columns = max(1, viewport_width // (image_width + spacing))
+            hover_label = HoverLabel(pixmap)
+            hover_label.save_requested.connect(self.save_image)
+            hover_label.delete_requested.connect(self.delete_image)
+            
+            self.captured_widgets.append(hover_label)
+            self.redraw_grid()
 
-            count = self.scroll_layout.count()
-            row = count // num_columns
-            col = count % num_columns
+    def save_image(self, hover_label):
+        file_path, _ = QFileDialog.getSaveFileName(
+            self, 
+            "Save Image", 
+            "", 
+            "PNG Images (*.png);;JPEG Images (*.jpg *.jpeg)"
+        )
+        if file_path:
+            pixmap = hover_label.pixmap()
+            if not file_path.lower().endswith(('.png', '.jpg', '.jpeg')):
+                file_path += '.png' # Default to png if no valid extension
+            pixmap.save(file_path)
+            print(f"Image saved to {file_path}")
+            hover_label.is_saved = True
+            hover_label.update() # Trigger repaint to show saved checkmark
 
-            label = QLabel()
-            label.setPixmap(pixmap)
-            self.scroll_layout.addWidget(label, row, col)
+    def delete_image(self, image_container):
+        if image_container in self.captured_widgets:
+            self.captured_widgets.remove(image_container)
+            image_container.deleteLater()
+            # No need to manually remove from layout, deleteLater handles it.
+            print("Image removed.")
+            # Use a single-shot timer to delay the redraw.
+            # This prevents issues if multiple deletes happen quickly 
+            # and avoids redrawing for every single deletion.
+            QTimer.singleShot(0, self.redraw_grid) 
 
     def clear_grid(self):
-        while self.scroll_layout.count():
-            child = self.scroll_layout.takeAt(0)
-            if child.widget():
-                child.widget().deleteLater()
-        self.captured_images.clear()
+        for widget in self.captured_widgets[:]: # Iterate over a copy
+            self.delete_image(widget)
+        self.captured_widgets.clear()
         print("Grid and in-memory image list cleared.")
 
     def closeEvent(self, event):
@@ -335,32 +469,29 @@ class SnapMosaic(QMainWindow):
                                         "The new hotkey will be active after you restart the application.")
 
     def redraw_grid(self):
-        if self.scroll_layout.count() == 0:
-            return
-
-        widgets = []
-        while self.scroll_layout.count() > 0:
+        # Clear the existing layout first
+        while self.scroll_layout.count():
             item = self.scroll_layout.takeAt(0)
             if item.widget():
-                widgets.append(item.widget())
+                # Set parent to None to remove from layout without deleting
+                item.widget().setParent(None)
 
-        viewport_width = self.scroll_area.viewport().width()
-        if not widgets:
+        if not self.captured_widgets:
             return
 
-        image_width = widgets[0].pixmap().width()
+        viewport_width = self.scroll_area.viewport().width()
+        # All widgets have the same size, so we can take the first one.
+        image_width = self.captured_widgets[0].width()
         spacing = self.scroll_layout.spacing()
         num_columns = max(1, (viewport_width - spacing) // (image_width + spacing))
 
-        for i, widget in enumerate(widgets):
+        for i, widget in enumerate(self.captured_widgets):
             row = i // num_columns
             col = i % num_columns
             self.scroll_layout.addWidget(widget, row, col)
 
 def main():
-    # Enable High DPI support
-    QApplication.setAttribute(Qt.ApplicationAttribute.AA_EnableHighDpiScaling, True)
-    QApplication.setAttribute(Qt.ApplicationAttribute.AA_UseHighDpiPixmaps, True)
+
     app = QApplication(sys.argv)
     window = SnapMosaic()
     window.show()

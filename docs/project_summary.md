@@ -4,7 +4,7 @@ This document provides a technical overview of the SnapMosaic application, its a
 
 ## 1. Project Goal
 
-The primary goal was to create a lightweight, easy-to-use screen capture utility for Windows. The application allows users to define a screen region, capture it repeatedly using a global hotkey, and view the captures in a responsive grid. Key requirements included multi-monitor support, High-DPI correctness, and a configurable hotkey.
+The primary goal was to create a lightweight, easy-to-use screen cross-platform capture utility. The application allows users to define a screen region, capture it repeatedly using a global hotkey, view the captures in a responsive grid, and manage them with save and delete options. Key features include multi-monitor support, High-DPI correctness, and a configurable hotkey.
 
 ## 2. Technology Stack
 
@@ -57,3 +57,12 @@ The application is built around a few key classes in `main.py`:
 - A simple `config.json` file stores persistent settings.
 - **Stored Values**: The `(x, y, width, height)` of the last capture region and the string representation of the hotkey (e.g., `"f7"`).
 - The configuration is loaded on startup and saved whenever the region or hotkey is changed.
+
+### Interactive Image Management
+
+- **Requirement**: Allow users to save or delete individual images directly from the grid.
+- **Implementation**:
+    1.  A custom `HoverLabel` class was created, inheriting from `QLabel`. This widget is responsible for managing its own state (hovering, saved) and drawing all interactive elements.
+    2.  **Hover Effect**: On `mouseEnterEvent`, the label draws a semi-transparent overlay and reveals "Save" and "Delete" icons in the top-right corner. The icons also provide visual feedback (a highlight tint) and tooltips when hovered over individually.
+    3.  **Actions**: Clicking an icon emits a `save_requested` or `delete_requested` signal. The `SnapMosaic` main window has slots connected to these signals to handle the file-saving dialog or remove the widget from the grid.
+    4.  **Saved Indicator**: After an image is successfully saved, a boolean flag `is_saved` is set on the `HoverLabel` instance. The `paintEvent` checks this flag and, if true, draws a green checkmark icon with a semi-transparent circular background in the bottom-left corner for persistent, high-visibility feedback.

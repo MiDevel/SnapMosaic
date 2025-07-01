@@ -15,6 +15,7 @@ SnapMosaic allows you to define a specific region on your screen and capture it 
 -   **Global Hotkey**: Use a system-wide hotkey (`F7` by default) to trigger a capture at any time.
 -   **Configurable Hotkey**: Change the hotkey to your preference in the Settings menu.
 -   **Image Grid**: View all your captures in a scrollable, responsive grid that adjusts to the window size.
+-   **Image Management**: Hover over any image in the grid to reveal Save and Delete buttons. Saved images are marked with a checkmark, so you never lose track.
 -   **Auto-Clear**: The grid automatically clears when you define a new region, ensuring all images in a session are the same size.
 -   **High-DPI Support**: Works correctly on multi-monitor and High-DPI setups.
 
