@@ -1,5 +1,8 @@
 from PySide6.QtWidgets import (
-    QDialog, QVBoxLayout, QHBoxLayout, QLabel, QDialogButtonBox, QCheckBox
+    QDialog, QVBoxLayout, QHBoxLayout, QPushButton, 
+    QLabel, QLineEdit, QCheckBox, QGroupBox, 
+    QFormLayout, QRadioButton, QComboBox, QSpinBox,
+    QFileDialog, QDialogButtonBox, QTabWidget, QWidget
 )
 from PySide6.QtCore import Qt
 from .hotkey import HotkeyInput
@@ -8,10 +11,33 @@ class SettingsDialog(QDialog):
     def __init__(self, config, parent=None):
         super().__init__(parent)
         self.setWindowTitle("Settings")
+        self.setMinimumWidth(500)
         self.config = config
         self.new_hotkey = self.config.get('hotkey')
 
-        layout = QVBoxLayout(self)
+        # Main layout for the dialog
+        main_layout = QVBoxLayout(self)
+        tab_widget = QTabWidget()
+
+        # Create tabs
+        general_tab = self.create_general_tab()
+        auto_save_tab = self.create_auto_save_tab()
+
+        # Add tabs
+        tab_widget.addTab(general_tab, "General")
+        tab_widget.addTab(auto_save_tab, "Auto-Save")
+
+        main_layout.addWidget(tab_widget)
+
+        # OK and Cancel buttons
+        button_box = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
+        button_box.accepted.connect(self.apply_settings)
+        button_box.rejected.connect(self.reject)
+        main_layout.addWidget(button_box)
+
+    def create_general_tab(self):
+        general_tab = QWidget()
+        layout = QVBoxLayout(general_tab)
 
         # Hotkey setting
         h_layout = QHBoxLayout()
@@ -26,19 +52,100 @@ class SettingsDialog(QDialog):
         self.auto_copy_checkbox.setChecked(self.config.get('auto_copy_to_clipboard', False))
         layout.addWidget(self.auto_copy_checkbox)
 
-        layout.addWidget(QLabel(""))
+        layout.addStretch()
+        return general_tab
 
-        self.button_box = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
-        self.button_box.accepted.connect(self.apply_settings)
-        self.button_box.rejected.connect(self.reject)
-        layout.addWidget(self.button_box)
+    def create_auto_save_tab(self):
+        auto_save_tab = QWidget()
+        layout = QVBoxLayout(auto_save_tab)
+
+        self.auto_save_group = QGroupBox("Auto-Save")
+        self.auto_save_group.setCheckable(True)
+        self.auto_save_group.setChecked(self.config.get('auto_save_enabled', False))
+        group_layout = QFormLayout()
+
+        # Save Location
+        location_layout = QHBoxLayout()
+        self.location_edit = QLineEdit(self.config.get('auto_save_location'))
+        location_layout.addWidget(self.location_edit)
+        self.browse_button = QPushButton("Browse...")
+        self.browse_button.clicked.connect(self.browse_for_folder)
+        location_layout.addWidget(self.browse_button)
+        group_layout.addRow("Save Location:", location_layout)
+
+        # Filename Prefix
+        self.prefix_edit = QLineEdit(self.config.get('auto_save_prefix'))
+        group_layout.addRow("Filename Prefix:", self.prefix_edit)
+
+        # Suffix Type
+        suffix_layout = QHBoxLayout()
+        self.timestamp_radio = QRadioButton("Timestamp")
+        self.numeric_radio = QRadioButton("Numeric")
+        is_numeric = self.config.get('auto_save_suffix_type') == 'numeric'
+        self.numeric_radio.setChecked(is_numeric)
+        self.timestamp_radio.setChecked(not is_numeric)
+        suffix_layout.addWidget(self.timestamp_radio)
+        suffix_layout.addWidget(self.numeric_radio)
+        suffix_layout.addStretch()
+        group_layout.addRow("Filename Suffix:", suffix_layout)
+
+        # Image Format
+        format_layout = QHBoxLayout()
+        self.format_combo = QComboBox()
+        self.format_combo.addItems(['png', 'jpg'])
+        self.format_combo.setCurrentText(self.config.get('auto_save_format'))
+        self.format_combo.currentTextChanged.connect(self.update_quality_visibility)
+        format_layout.addWidget(self.format_combo)
+
+        # JPG Quality
+        self.quality_label = QLabel("JPG Quality:")
+        self.quality_spinbox = QSpinBox()
+        self.quality_spinbox.setRange(1, 100)
+        self.quality_spinbox.setValue(self.config.get('auto_save_jpg_quality'))
+        self.quality_spinbox.setSuffix('%')
+        format_layout.addWidget(self.quality_label)
+        format_layout.addWidget(self.quality_spinbox)
+        format_layout.addStretch()
+        group_layout.addRow("Image Format:", format_layout)
+
+        self.auto_save_group.setLayout(group_layout)
+        layout.addWidget(self.auto_save_group)
+        layout.addStretch()
+
+        # Set initial state
+        self.update_quality_visibility(self.format_combo.currentText())
+
+        return auto_save_tab
 
     def set_new_hotkey(self, hotkey):
         self.new_hotkey = hotkey
 
+    def browse_for_folder(self):
+        directory = QFileDialog.getExistingDirectory(
+            self,
+            "Select Folder",
+            self.location_edit.text()
+        )
+        if directory:
+            self.location_edit.setText(directory)
+
+    def update_quality_visibility(self, text):
+        is_jpg = text.lower() == 'jpg'
+        self.quality_label.setVisible(is_jpg)
+        self.quality_spinbox.setVisible(is_jpg)
+
     def apply_settings(self):
         self.config.set('hotkey', self.new_hotkey)
         self.config.set('auto_copy_to_clipboard', self.auto_copy_checkbox.isChecked())
+
+        self.config.set('auto_save_enabled', self.auto_save_group.isChecked())
+        self.config.set('auto_save_location', self.location_edit.text())
+        self.config.set('auto_save_prefix', self.prefix_edit.text())
+        suffix_type = 'numeric' if self.numeric_radio.isChecked() else 'timestamp'
+        self.config.set('auto_save_suffix_type', suffix_type)
+        self.config.set('auto_save_format', self.format_combo.currentText())
+        self.config.set('auto_save_jpg_quality', self.quality_spinbox.value())
+        
         self.accept()
 
 class AboutDialog(QDialog):
