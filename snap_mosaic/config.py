@@ -2,7 +2,7 @@ import json
 import os
 
 class Config:
-    def __init__(self, file_path='config.json'):
+    def __init__(self, file_path='SnapMosaic.json'):
         self.file_path = file_path
         self.settings = self.load_config()
 
@@ -26,5 +26,6 @@ class Config:
     def get_default_config(self):
         return {
             'hotkey': 'f7',
-            'window_geometry': None
+            'window_geometry': None,
+            'auto_copy_to_clipboard': False
         }

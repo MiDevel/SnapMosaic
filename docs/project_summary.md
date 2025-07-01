@@ -4,7 +4,7 @@ This document provides a technical overview of the SnapMosaic application, its a
 
 ## 1. Project Goal
 
-The primary goal was to create a lightweight, easy-to-use screen cross-platform capture utility. The application allows users to define a screen region, capture it repeatedly using a global hotkey, view the captures in a responsive grid, and manage them with save and delete options. Key features include multi-monitor support, High-DPI correctness, and a configurable hotkey.
+The primary goal was to create a lightweight, easy-to-use screen cross-platform capture utility. The application allows users to define a screen region, capture it repeatedly using a global hotkey, view the captures in a responsive grid, and manage them with copy, save and delete options. Key features include multi-monitor support, High-DPI correctness, and a configurable hotkey.
 
 ## 2. Technology Stack
 
@@ -19,13 +19,13 @@ The application was refactored from a single-file script into a modular package 
 
 - **`SnapMosaic` (`main_window.py`)**: The main application `QMainWindow`. It manages the primary UI, orchestrates all major functionality, and handles application state and configuration.
 
-- **`SelectionOverlay` & `HoverLabel` (`widgets.py`)**: Custom widgets for UI interaction. `SelectionOverlay` handles drawing the capture region, while `HoverLabel` displays captured images and provides interactive save/delete controls.
+- **`SelectionOverlay` & `HoverLabel` (`widgets.py`)**: Custom widgets for UI interaction. `SelectionOverlay` handles drawing the capture region, while `HoverLabel` displays captured images and provides interactive copy/save/delete controls.
 
 - **`HotkeyListener` & `HotkeyInput` (`hotkey.py`)**: Classes responsible for the global hotkey system. `HotkeyListener` uses `pynput` to listen for system-wide key presses, while `HotkeyInput` is the UI widget for setting a new hotkey.
 
 - **`SettingsDialog` & `AboutDialog` (`dialogs.py`)**: Standard `QDialog` subclasses for the settings and about windows.
 
-- **`Config` (`config.py`)**: A simple class to manage loading and saving the `config.json` file.
+- **`Config` (`config.py`)**: A simple class to manage loading and saving the `SnapMosaic.json` file.
 
 ## 4. Key Implementation Details & Decisions
 
@@ -57,9 +57,13 @@ The application was refactored from a single-file script into a modular package 
 
 ### Configuration
 
-- A simple `config.json` file stores persistent settings.
-- **Stored Values**: The `(x, y, width, height)` of the last capture region and the string representation of the hotkey (e.g., `"f7"`).
-- The configuration is loaded on startup and saved whenever the region or hotkey is changed.
+- A simple `SnapMosaic.json` file stores persistent settings.
+- **Stored Values**: 
+    - The `(x, y, width, height)` of the last capture region
+    - The string representation of the hotkey (e.g., `"f7"`)
+    - The boolean value of the auto-copy to clipboard option
+
+The configuration is loaded on startup and saved whenever any of the above values is changed.
 
 ### Interactive Image Management
 

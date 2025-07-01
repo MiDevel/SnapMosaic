@@ -1,7 +1,7 @@
 from PySide6.QtWidgets import (
     QWidget, QLabel, QApplication, QRubberBand, QToolTip, QStyle
 )
-from PySide6.QtGui import QPainter, QColor, QPen, QPainterPath
+from PySide6.QtGui import QPainter, QColor, QPen, QPainterPath, QIcon
 from PySide6.QtCore import Qt, QRect, Signal
 
 class SelectionOverlay(QWidget):
@@ -42,6 +42,7 @@ class SelectionOverlay(QWidget):
 class HoverLabel(QLabel):
     delete_requested = Signal(object)
     save_requested = Signal(object)
+    copy_requested = Signal(object)
 
     def __init__(self, pixmap, parent=None):
         super().__init__(parent)
@@ -49,11 +50,12 @@ class HoverLabel(QLabel):
         self.setFixedSize(pixmap.size())
         self.is_hovering = False
         self.is_saved = False
-        self.hovered_icon = None # Can be 'save', 'delete', or None
+        self.hovered_icon = None # Can be 'save', 'delete', 'copy', or None
 
         # Define "hotspots" for the buttons
         icon_size = 24
         margin = 5
+        self.copy_rect = QRect(self.width() - 3 * (icon_size + margin), margin, icon_size, icon_size)
         self.save_rect = QRect(self.width() - 2 * (icon_size + margin), margin, icon_size, icon_size)
         self.delete_rect = QRect(self.width() - (icon_size + margin), margin, icon_size, icon_size)
 
@@ -76,7 +78,10 @@ class HoverLabel(QLabel):
             pos = event.pos()
             old_hovered_icon = self.hovered_icon
 
-            if self.save_rect.contains(pos):
+            if self.copy_rect.contains(pos):
+                self.hovered_icon = 'copy'
+                QToolTip.showText(event.globalPos(), "Copy to Clipboard", self)
+            elif self.save_rect.contains(pos):
                 self.hovered_icon = 'save'
                 QToolTip.showText(event.globalPos(), "Save Image", self)
             elif self.delete_rect.contains(pos):
@@ -92,8 +97,9 @@ class HoverLabel(QLabel):
 
     def mousePressEvent(self, event):
         if self.is_hovering:
-            if self.save_rect.contains(event.pos()):
-                # Pass the label instance itself
+            if self.copy_rect.contains(event.pos()):
+                self.copy_requested.emit(self)
+            elif self.save_rect.contains(event.pos()):
                 self.save_requested.emit(self)
             elif self.delete_rect.contains(event.pos()):
                 self.delete_requested.emit(self)
@@ -120,16 +126,20 @@ class HoverLabel(QLabel):
 
             # Draw icons
             style = self.style()
+            copy_icon = QIcon("snap_mosaic/icons/clipboard.svg")
             save_icon = style.standardIcon(QStyle.StandardPixmap.SP_DialogSaveButton)
             delete_icon = style.standardIcon(QStyle.StandardPixmap.SP_MessageBoxCritical)
 
+            copy_icon.paint(painter, self.copy_rect)
             save_icon.paint(painter, self.save_rect)
             delete_icon.paint(painter, self.delete_rect)
 
             # Draw hover effect on icons
             if self.hovered_icon:
                 hover_color = QColor(255, 255, 255, 70) # White with ~27% opacity
-                if self.hovered_icon == 'save':
+                if self.hovered_icon == 'copy':
+                    painter.fillRect(self.copy_rect, hover_color)
+                elif self.hovered_icon == 'save':
                     painter.fillRect(self.save_rect, hover_color)
                 elif self.hovered_icon == 'delete':
                     painter.fillRect(self.delete_rect, hover_color)

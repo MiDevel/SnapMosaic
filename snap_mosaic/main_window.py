@@ -94,8 +94,7 @@ class SnapMosaic(QMainWindow):
         self.hotkey = self.config.get("hotkey", 'f7')
         self.update_snap_button_text()
 
-    def save_app_config(self):
-        # Save capture region
+    def save_capture_region(self):
         if self.capture_region:
             region_data = {
                 "x": self.capture_region.x(),
@@ -104,9 +103,6 @@ class SnapMosaic(QMainWindow):
                 "height": self.capture_region.height()
             }
             self.config.set("capture_region", region_data)
-        
-        # Save hotkey
-        self.config.set("hotkey", self.hotkey)
 
     def start_hotkey_listener(self):
         if self.hotkey_listener:
@@ -142,7 +138,7 @@ class SnapMosaic(QMainWindow):
     def set_capture_region(self, rect):
         self.capture_region = rect
         print(f"Capture region set to: {self.capture_region}")
-        self.save_app_config()
+        self.save_capture_region()
         self.show()
 
     def trigger_capture(self):
@@ -161,9 +157,14 @@ class SnapMosaic(QMainWindow):
         )
 
         if not pixmap.isNull():
+            if self.config.get('auto_copy_to_clipboard', False):
+                QApplication.clipboard().setPixmap(pixmap)
+                print("Image auto-copied to clipboard.")
+
             hover_label = HoverLabel(pixmap)
             hover_label.save_requested.connect(self.save_image)
             hover_label.delete_requested.connect(self.delete_image)
+            hover_label.copy_requested.connect(self.copy_image_to_clipboard)
             hover_label.setStyleSheet("border: 1px solid #444444;")
             
             self.captured_widgets.append(hover_label)
@@ -190,7 +191,11 @@ class SnapMosaic(QMainWindow):
             self.captured_widgets.remove(image_container)
             image_container.deleteLater()
             print("Image removed.")
-            QTimer.singleShot(0, self.redraw_grid) 
+            QTimer.singleShot(0, self.redraw_grid)
+
+    def copy_image_to_clipboard(self, hover_label):
+        QApplication.clipboard().setPixmap(hover_label.pixmap())
+        print("Image copied to clipboard.") 
 
     def clear_grid(self):
         for widget in self.captured_widgets[:]: # Iterate over a copy
@@ -217,18 +222,18 @@ class SnapMosaic(QMainWindow):
         self.snap_button.setText(f"Snap [{self.hotkey.upper()}]")
 
     def open_settings(self):
-        dialog = SettingsDialog(self.hotkey, self)
+        previous_hotkey = self.config.get('hotkey')
+        dialog = SettingsDialog(self.config, self)
+
         if dialog.exec():
-            new_hotkey = dialog.new_hotkey
-            if new_hotkey != self.hotkey:
-                previous_hotkey = self.hotkey
-                self.hotkey = new_hotkey
+            new_hotkey = self.config.get('hotkey')
+            if new_hotkey != previous_hotkey:
+                self.hotkey = new_hotkey  # Update instance variable
 
                 if self.start_hotkey_listener():
-                    # Success
-                    self.save_app_config()
+                    # Success - config is already saved by the dialog
                     self.update_snap_button_text()
-                    QMessageBox.information(self, "Hotkey Updated", 
+                    QMessageBox.information(self, "Hotkey Updated",
                                             f"The new hotkey '{self.hotkey}' is now active.")
                 else:
                     # Failure
@@ -237,8 +242,9 @@ class SnapMosaic(QMainWindow):
                                         "It might be already in use by another application.\n"
                                         "Reverting to the previous hotkey.")
                     self.hotkey = previous_hotkey
-                    self.start_hotkey_listener() # Restart with the old, working key
-                    self.update_snap_button_text() # Update button text back
+                    self.config.set('hotkey', previous_hotkey)  # Revert in config
+                    self.start_hotkey_listener()  # Restart with the old, working key
+                    self.update_snap_button_text()  # Update button text back
 
     def open_about(self):
         dialog = AboutDialog(self.version, self)
