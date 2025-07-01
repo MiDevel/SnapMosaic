@@ -2,7 +2,7 @@
 
 [<img src="https://github.com/MiDevel/SnapMosaic/blob/main/assets/SnapMosaic.png?raw=true" width="125"/>](image.png)
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) [![Version](https://img.shields.io/badge/version-1.10.3-blue.svg)](https://github.com/MiDevel/SnapMosaic/releases)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) [![Version](https://img.shields.io/badge/version-1.10.4-blue.svg)](https://github.com/MiDevel/SnapMosaic/releases)
 
 A simple and efficient screen capture and review utility, built with Python and PySide6.
 
@@ -16,6 +16,7 @@ SnapMosaic allows you to define a specific region on your screen and capture it 
 -   **Image Grid**: View all your captures in a scrollable, responsive grid that adjusts to the window size.
 -   **Image Management**: Hover over any image in the grid to reveal Copy, Save and Delete buttons. Saved images are marked with a checkmark.
 -   **Auto-Copy to Clipboard**: The configuration allows each capture to be automatically copied to the clipboard.
+-   **Auto-Save**: The configuration allows each capture to be automatically saved to a specified location as either PNG or JPG.
 -   **Auto-Clear**: The grid automatically clears when you define a new region, ensuring all images in a session are the same size.
 -   **High-DPI Support**: Works correctly on multi-monitor and High-DPI setups.
 

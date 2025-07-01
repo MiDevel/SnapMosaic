@@ -4,7 +4,7 @@ This document provides a technical overview of the SnapMosaic application, its a
 
 ## 1. Project Goal
 
-The primary goal was to create a lightweight, easy-to-use screen cross-platform capture utility. The application allows users to define a screen region, capture it repeatedly using a global hotkey, view the captures in a responsive grid, and manage them with copy, save and delete options. Key features include multi-monitor support, High-DPI correctness, and a configurable hotkey.
+The primary goal was to create a lightweight, easy-to-use screen cross-platform capture utility. The application allows users to define a screen region, capture it repeatedly using a global hotkey, view the captures in a responsive grid, and manage them with copy, save and delete options. Key features include multi-monitor support, High-DPI correctness, a configurable hotkey, and a comprehensive auto-save system.
 
 ## 2. Technology Stack
 
@@ -23,9 +23,9 @@ The application was refactored from a single-file script into a modular package 
 
 - **`HotkeyListener` & `HotkeyInput` (`hotkey.py`)**: Classes responsible for the global hotkey system. `HotkeyListener` uses `pynput` to listen for system-wide key presses, while `HotkeyInput` is the UI widget for setting a new hotkey.
 
-- **`SettingsDialog` & `AboutDialog` (`dialogs.py`)**: Standard `QDialog` subclasses for the settings and about windows.
+- **`Config` (`config.py`)**: A robust configuration manager that handles loading and saving user settings to a `SnapMosaic.json` file. It is designed to be forward-compatible by merging a complete set of default settings with the user's saved settings, preventing crashes when new configuration keys are introduced.
 
-- **`Config` (`config.py`)**: A simple class to manage loading and saving the `SnapMosaic.json` file.
+- **`SettingsDialog` & `AboutDialog` (`dialogs.py`)**: The UI dialogs for the application. `SettingsDialog` provides a clean, tabbed interface ("General" and "Auto-Save") for all user-configurable options.
 
 ## 4. Key Implementation Details & Decisions
 

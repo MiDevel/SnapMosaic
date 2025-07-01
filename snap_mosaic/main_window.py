@@ -8,6 +8,7 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtGui import QPixmap, QIcon
 from PySide6.QtCore import Qt, QRect, QThread, QTimer
+from datetime import datetime
 
 from snap_mosaic.config import Config
 from snap_mosaic.hotkey import HotkeyListener
@@ -147,6 +148,11 @@ class SnapMosaic(QMainWindow):
             return
 
         screen = QApplication.primaryScreen()
+        if not screen:
+            print("Error: Could not get primary screen.")
+            return
+
+        # IMPORTANT: Keep the device pixel ratio for High-DPI displays
         dpr = screen.devicePixelRatio()
         pixmap = screen.grabWindow(
             0,
@@ -156,19 +162,25 @@ class SnapMosaic(QMainWindow):
             int(self.capture_region.height() * dpr)
         )
 
-        if not pixmap.isNull():
-            if self.config.get('auto_copy_to_clipboard', False):
-                QApplication.clipboard().setPixmap(pixmap)
-                print("Image auto-copied to clipboard.")
+        if pixmap.isNull():
+            return
 
-            hover_label = HoverLabel(pixmap)
-            hover_label.save_requested.connect(self.save_image)
-            hover_label.delete_requested.connect(self.delete_image)
-            hover_label.copy_requested.connect(self.copy_image_to_clipboard)
-            hover_label.setStyleSheet("border: 1px solid #444444;")
-            
-            self.captured_widgets.append(hover_label)
-            self.redraw_grid()
+        # Auto-copy to clipboard if enabled
+        if self.config.get('auto_copy_to_clipboard', False):
+            QApplication.clipboard().setPixmap(pixmap)
+            print("Image auto-copied to clipboard.")
+
+        # Create the image widget first
+        image_container = HoverLabel(pixmap)
+        image_container.delete_requested.connect(self.delete_image)
+        image_container.save_requested.connect(self.save_image)
+        image_container.copy_requested.connect(self.copy_image_to_clipboard)
+
+        # Auto-save if enabled (this will also set the 'saved' flag)
+        self.auto_save_image(image_container)
+        
+        self.captured_widgets.insert(0, image_container)
+        self.redraw_grid()
 
     def save_image(self, hover_label):
         file_path, _ = QFileDialog.getSaveFileName(
@@ -195,7 +207,44 @@ class SnapMosaic(QMainWindow):
 
     def copy_image_to_clipboard(self, hover_label):
         QApplication.clipboard().setPixmap(hover_label.pixmap())
-        print("Image copied to clipboard.") 
+        print("Image copied to clipboard.")
+
+    def auto_save_image(self, image_container):
+        if not self.config.get('auto_save_enabled'):
+            return
+
+        location = self.config.get('auto_save_location')
+        prefix = self.config.get('auto_save_prefix')
+        suffix_type = self.config.get('auto_save_suffix_type')
+        img_format = self.config.get('auto_save_format')
+        pixmap = image_container.pixmap()
+
+        try:
+            os.makedirs(location, exist_ok=True)
+        except OSError as e:
+            print(f"Error creating directory {location}: {e}")
+            QMessageBox.warning(self, "Auto-Save Error", f"Could not create the save directory:\n{location}\n\nPlease check permissions and the path in Settings.")
+            return
+
+        if suffix_type == 'timestamp':
+            # Add milliseconds for uniqueness in rapid captures
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")[:-3]
+            filename = f"{prefix}-{timestamp}.{img_format}"
+        else:  # numeric
+            counter = self.config.get('auto_save_numeric_counter')
+            filename = f"{prefix}-{counter:04d}.{img_format}"
+            self.config.set('auto_save_numeric_counter', counter + 1)
+
+        file_path = os.path.join(location, filename)
+        quality = self.config.get('auto_save_jpg_quality') if img_format == 'jpg' else -1
+
+        if not pixmap.save(file_path, None, quality):
+            print(f"Error auto-saving image to {file_path}")
+            QMessageBox.warning(self, "Auto-Save Error", f"Could not save the image to:\n{file_path}")
+        else:
+            print(f"Auto-saved image to {file_path}")
+            image_container.is_saved = True
+            image_container.update() # Trigger repaint to show saved checkmark
 
     def clear_grid(self):
         for widget in self.captured_widgets[:]: # Iterate over a copy
