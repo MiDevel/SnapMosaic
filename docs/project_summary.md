@@ -11,6 +11,7 @@ The primary goal was to create a lightweight, easy-to-use screen cross-platform 
 - **Language**: Python 3
 - **UI Framework**: PySide6 (Qt for Python)
 - **Global Hotkeys**: pynput
+- **Sound**: playsound
 - **Packaging**: PyInstaller
 
 ## 3. Core Architecture
@@ -64,6 +65,7 @@ The application was refactored from a single-file script into a modular package 
     - The boolean value of the auto-copy to clipboard option
     - Auto-save configuration (enabled, location, prefix, suffix, format, quality)
     - System tray integration (close to tray, show notification)
+    - Sound effects enabled (boolean)
 
 The configuration is loaded on startup and saved whenever any of the above values is changed.
 
@@ -75,6 +77,15 @@ The configuration is loaded on startup and saved whenever any of the above value
     2.  **Hover Effect**: On `mouseEnterEvent`, the label draws a semi-transparent overlay and reveals "Save" and "Delete" icons in the top-right corner. The icons also provide visual feedback (a highlight tint) and tooltips when hovered over individually.
     3.  **Actions**: Clicking an icon emits a `save_requested` or `delete_requested` signal. The `SnapMosaic` main window has slots connected to these signals to handle the file-saving dialog or remove the widget from the grid.
     4.  **Saved Indicator**: After an image is successfully saved, a boolean flag `is_saved` is set on the `HoverLabel` instance. The `paintEvent` checks this flag and, if true, draws a green checkmark icon with a semi-transparent circular background in the bottom-left corner for persistent, high-visibility feedback.
+
+### Sound Effects
+
+- **Requirement**: Provide optional, audible feedback for key user actions.
+- **Evolution of Solution**:
+    1.  The initial implementation used Qt's native `QSoundEffect` class. This approach suffered from inconsistent and truncated playback, especially with very short `.wav` files. The root cause was determined to be a combination of garbage collection issues (where the player object was destroyed before the sound finished) and potential incompatibilities with certain audio backends or file formats.
+    2.  After multiple attempts to create a reliable player pool with `QSoundEffect`, the decision was made to switch to a more robust, dedicated library.
+    3.  The final, successful solution uses the third-party `playsound` library. It is simple, has no complex dependencies, and has proven to be highly reliable. To prevent the UI from freezing during playback, each sound is played in its own non-blocking background thread (`threading.Thread`).
+- **Configuration**: A new "Enable sounds" checkbox was added to the General settings tab, allowing users to toggle all sound effects on or off. This setting is persisted in `SnapMosaic.json` as `sounds_enabled`.
 
 ### System Tray Integration
 
@@ -97,5 +108,5 @@ The final development phase focused on improving robustness, usability, and visu
 
 - **Custom Icons**: The standard Qt icons for "Settings" and "About" were replaced with custom white SVG icons to match the application's dark theme.
 - **Application Icon**: A custom application icon (`.ico` on Windows, `.svg` on other platforms) was added. This icon is displayed in the window's title bar and the system taskbar.
-- **Asset Bundling**: The `SnapMosaic.spec` file for PyInstaller was updated to bundle the `assets` and `snap_mosaic/icons` directories. This ensures all icons are included in the standalone executable, making it fully portable.
+- **Asset Bundling**: The `SnapMosaic.spec` file for PyInstaller was updated to bundle the `assets`, `snap_mosaic/icons`, and `snap_mosaic/sounds` directories. This ensures all icons and sound files are included in the standalone executable, making it fully portable.
 - **Image Border**: A subtle 1px border was added via stylesheet to captured images in the grid. This visually separates them from the application background, which is especially helpful when a captured image has edges of a similar color.

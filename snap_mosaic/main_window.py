@@ -9,6 +9,8 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtGui import QPixmap, QIcon
 from PySide6.QtCore import Qt, QRect, QThread, QTimer
+import threading
+from playsound import playsound
 from datetime import datetime
 
 from snap_mosaic.config import Config
@@ -50,6 +52,9 @@ class SnapMosaic(QMainWindow):
         top_button_layout.addStretch()
         top_button_layout.addWidget(self.settings_button)
         top_button_layout.addWidget(self.about_button)
+        main_layout.addLayout(top_button_layout)
+
+
 
         # Scroll Area for captures
         self.scroll_area = QScrollArea()
@@ -78,6 +83,8 @@ class SnapMosaic(QMainWindow):
         self.resize_timer = QTimer(self)
         self.resize_timer.setSingleShot(True)
         self.resize_timer.timeout.connect(self.redraw_grid)
+
+
 
         # Load config and start services
         self.load_app_config()
@@ -144,6 +151,33 @@ class SnapMosaic(QMainWindow):
         self.save_capture_region()
         self.show()
 
+    def play_sound(self, name):
+        """
+        Plays a sound using the 'playsound' library in a separate thread
+        to prevent UI blocking.
+        """
+        if not self.config.get('sounds_enabled', True):
+            return
+
+        sound_map = {
+            'snap': 'snap_mosaic/sounds/snap.wav',
+            'save': 'snap_mosaic/sounds/save.wav',
+            'clipboard': 'snap_mosaic/sounds/clipboard.wav',
+            'error': 'snap_mosaic/sounds/error.wav'
+        }
+
+        if name in sound_map:
+            file_path = resource_path(sound_map[name])
+            
+            # Run playsound in a separate thread to avoid blocking the GUI
+            try:
+                sound_thread = threading.Thread(target=playsound, args=(file_path,), daemon=True)
+                sound_thread.start()
+            except Exception as e:
+                print(f"Error playing sound '{name}': {e}")
+        else:
+            print(f"Warning: Sound '{name}' not defined in play_sound's sound_map.")
+
     def trigger_capture(self):
         if not self.capture_region:
             print("Hotkey pressed, but no region defined.")
@@ -167,6 +201,8 @@ class SnapMosaic(QMainWindow):
         if pixmap.isNull():
             return
 
+        self.play_sound('snap')
+
         # Auto-copy to clipboard if enabled
         if self.config.get('auto_copy_to_clipboard', False):
             QApplication.clipboard().setPixmap(pixmap)
@@ -184,7 +220,7 @@ class SnapMosaic(QMainWindow):
         self.captured_widgets.insert(0, image_container)
         self.redraw_grid()
 
-    def save_image(self, hover_label):
+    def save_image(self, hover_label, quiet=False):
         file_path, _ = QFileDialog.getSaveFileName(
             self, 
             "Save Image", 
@@ -199,6 +235,8 @@ class SnapMosaic(QMainWindow):
             print(f"Image saved to {file_path}")
             hover_label.is_saved = True
             hover_label.update() # Trigger repaint to show saved checkmark
+            if not quiet:
+                self.play_sound('save')
 
     def delete_image(self, image_container):
         if image_container in self.captured_widgets:
@@ -207,11 +245,13 @@ class SnapMosaic(QMainWindow):
             print("Image removed.")
             QTimer.singleShot(0, self.redraw_grid)
 
-    def copy_image_to_clipboard(self, hover_label):
+    def copy_image_to_clipboard(self, hover_label, quiet=False):
         QApplication.clipboard().setPixmap(hover_label.pixmap())
+        if not quiet:
+            self.play_sound('clipboard')
         print("Image copied to clipboard.")
 
-    def auto_save_image(self, image_container):
+    def auto_save_image(self, image_container, quiet=False):
         if not self.config.get('auto_save_enabled'):
             return
 
@@ -299,6 +339,7 @@ class SnapMosaic(QMainWindow):
                                         f"Could not register the hotkey '{self.hotkey}'.\n"
                                         "It might be already in use by another application.\n"
                                         "Reverting to the previous hotkey.")
+                    self.play_sound('error')
                     self.hotkey = previous_hotkey
                     self.config.set('hotkey', previous_hotkey)  # Revert in config
                     self.start_hotkey_listener()  # Restart with the old, working key

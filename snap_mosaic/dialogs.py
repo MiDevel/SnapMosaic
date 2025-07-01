@@ -70,6 +70,11 @@ class SettingsDialog(QDialog):
         self.minimize_to_tray_checkbox.toggled.connect(self.show_tray_notification_checkbox.setEnabled)
         self.show_tray_notification_checkbox.setEnabled(self.minimize_to_tray_checkbox.isChecked())
 
+        # Sounds enabled setting
+        self.sounds_enabled_checkbox = QCheckBox("Enable sounds")
+        self.sounds_enabled_checkbox.setChecked(self.config.get('sounds_enabled', True))
+        layout.addWidget(self.sounds_enabled_checkbox)
+
         layout.addStretch()
         return general_tab
 
@@ -157,6 +162,7 @@ class SettingsDialog(QDialog):
         self.config.set('auto_copy_to_clipboard', self.auto_copy_checkbox.isChecked())
         self.config.set('minimize_to_tray', self.minimize_to_tray_checkbox.isChecked())
         self.config.set('show_tray_notification', self.show_tray_notification_checkbox.isChecked())
+        self.config.set('sounds_enabled', self.sounds_enabled_checkbox.isChecked())
 
         self.config.set('auto_save_enabled', self.auto_save_group.isChecked())
         self.config.set('auto_save_location', self.location_edit.text())

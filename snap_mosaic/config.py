@@ -48,6 +48,7 @@ class Config:
             'auto_copy_to_clipboard': False,
             'minimize_to_tray': False,
             'show_tray_notification': True,
+            'sounds_enabled': True,
             'auto_save_enabled': False,
             'auto_save_location': default_save_path,
             'auto_save_prefix': 'SnapMosaic',

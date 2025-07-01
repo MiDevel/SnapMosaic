@@ -2,7 +2,7 @@
 
 [<img src="https://github.com/MiDevel/SnapMosaic/blob/main/assets/SnapMosaic.png?raw=true" width="125"/>](image.png)
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) [![Version](https://img.shields.io/badge/version-1.10.5-blue.svg)](https://github.com/MiDevel/SnapMosaic/releases)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) [![Version](https://img.shields.io/badge/version-1.10.6-blue.svg)](https://github.com/MiDevel/SnapMosaic/releases)
 
 A simple and efficient screen capture and review utility, built with Python and PySide6.
 
@@ -10,16 +10,16 @@ SnapMosaic allows you to define a specific region on your screen and capture it 
 
 ## Features
 
--   **Define Capture Region**: Select any area of your screen to capture. The selected region is saved and remembered across sessions.
--   **Global Hotkey**: Use a system-wide hotkey (`F7` by default) to trigger a capture at any time.
--   **Configurable Hotkey**: Change the hotkey to your preference in the Settings menu.
--   **Image Grid**: View all your captures in a scrollable, responsive grid that adjusts to the window size.
--   **Image Management**: Hover over any image in the grid to reveal Copy, Save and Delete buttons. Saved images are marked with a checkmark.
--   **Auto-Copy to Clipboard**: The configuration allows each capture to be automatically copied to the clipboard.
--   **Auto-Save**: The configuration allows each capture to be automatically saved to a specified location as either PNG or JPG.
--   **Auto-Clear**: The grid automatically clears when you define a new region, ensuring all images in a session are the same size.
--   **System Tray Integration**: Close the app to the system tray to keep it running in the background. The tray icon provides a menu for quick access to key functions and can be configured to show/hide notifications.
--   **High-DPI Support**: Works correctly on multi-monitor and High-DPI setups.
+-   **Capture Region**: Define a persistent screen region for repeated captures.
+-   **Global Hotkey**: Trigger captures from any application using a system-wide, configurable hotkey (default `F7`).
+-   **Responsive Image Grid**: View captures in a scrollable grid that dynamically adjusts to window size.
+-   **Image Management**: Copy, save, or delete captures directly from the grid. A visual indicator marks saved images.
+-   **Automated Workflow**:
+    -   **Auto-Copy**: Automatically copy new captures to the clipboard.
+    -   **Auto-Save**: Automatically save new captures to a specified directory with configurable naming and format (PNG/JPG).
+-   **System Tray Mode**: Run the application discreetly in the system tray with a context menu for quick actions.
+-   **Sound Notifications**: Optional audio feedback for capture, save, and copy events.
+-   **High-DPI Aware**: Ensures distortion-free captures on multi-monitor and High-DPI displays.
 
 ## Getting Started
 
