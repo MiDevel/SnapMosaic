@@ -1,11 +1,10 @@
 # SnapMosaic
 
-A simple and efficient screen capture and review utility, built with Python and PySide6.
+[<img src="https://github.com/MiDevel/SnapMosaic/blob/main/assets/SnapMosaic.png?raw=true" width="125"/>](image.png)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) [![Version](https://img.shields.io/badge/version-1.0.2-blue.svg)](https://github.com/MiDevel/SnapMosaic/releases)
 
-![SnapMosaic](https://github.com/MiDevel/SnapMosaic/blob/main/assets/SnapMosaic.png?raw=true)
-
+A simple and efficient screen capture and review utility, built with Python and PySide6.
 
 SnapMosaic allows you to define a specific region on your screen and capture it multiple times with a global hotkey. Captured images are displayed in a responsive grid, perfect for comparing screenshots, tracking changes, or creating step-by-step guides.
 
