@@ -52,6 +52,24 @@ class SettingsDialog(QDialog):
         self.auto_copy_checkbox.setChecked(self.config.get('auto_copy_to_clipboard', False))
         layout.addWidget(self.auto_copy_checkbox)
 
+        # Minimize to tray setting
+        self.minimize_to_tray_checkbox = QCheckBox("Close to system tray instead of quitting")
+        self.minimize_to_tray_checkbox.setChecked(self.config.get('minimize_to_tray', False))
+        layout.addWidget(self.minimize_to_tray_checkbox)
+
+        # Notification sub-setting
+        self.show_tray_notification_checkbox = QCheckBox("Show notification on close")
+        self.show_tray_notification_checkbox.setChecked(self.config.get('show_tray_notification', True))
+        
+        notification_layout = QHBoxLayout()
+        notification_layout.addSpacing(20) # Indentation
+        notification_layout.addWidget(self.show_tray_notification_checkbox)
+        layout.addLayout(notification_layout)
+
+        # Connect signal to enable/disable sub-setting and set initial state
+        self.minimize_to_tray_checkbox.toggled.connect(self.show_tray_notification_checkbox.setEnabled)
+        self.show_tray_notification_checkbox.setEnabled(self.minimize_to_tray_checkbox.isChecked())
+
         layout.addStretch()
         return general_tab
 
@@ -137,6 +155,8 @@ class SettingsDialog(QDialog):
     def apply_settings(self):
         self.config.set('hotkey', self.new_hotkey)
         self.config.set('auto_copy_to_clipboard', self.auto_copy_checkbox.isChecked())
+        self.config.set('minimize_to_tray', self.minimize_to_tray_checkbox.isChecked())
+        self.config.set('show_tray_notification', self.show_tray_notification_checkbox.isChecked())
 
         self.config.set('auto_save_enabled', self.auto_save_group.isChecked())
         self.config.set('auto_save_location', self.location_edit.text())

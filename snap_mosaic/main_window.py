@@ -4,7 +4,8 @@ from PySide6.QtWidgets import (
     QApplication, QMainWindow, QWidget,
     QVBoxLayout, QHBoxLayout, QPushButton,
     QScrollArea, QGridLayout,
-    QFileDialog, QMessageBox, QStyle
+    QFileDialog, QMessageBox, QStyle,
+    QSystemTrayIcon, QMenu
 )
 from PySide6.QtGui import QPixmap, QIcon
 from PySide6.QtCore import Qt, QRect, QThread, QTimer
@@ -14,6 +15,7 @@ from snap_mosaic.config import Config
 from snap_mosaic.hotkey import HotkeyListener
 from snap_mosaic.widgets import SelectionOverlay, HoverLabel
 from snap_mosaic.dialogs import SettingsDialog, AboutDialog
+from snap_mosaic.utils import resource_path
 from . import __version__
 
 class SnapMosaic(QMainWindow):
@@ -36,12 +38,10 @@ class SnapMosaic(QMainWindow):
         self.snap_button = QPushButton() # Text set in update_snap_button_text
         self.clear_button = QPushButton("Clear All")
 
-        icon_path = os.path.join(os.path.dirname(__file__), 'icons', 'settings.svg')
-        settings_icon = QIcon(icon_path)
+        settings_icon = QIcon(resource_path('snap_mosaic/icons/settings.svg'))
         self.settings_button = QPushButton(settings_icon, " Settings")
 
-        about_icon_path = os.path.join(os.path.dirname(__file__), 'icons', 'about.svg')
-        about_icon = QIcon(about_icon_path)
+        about_icon = QIcon(resource_path('snap_mosaic/icons/about.svg'))
         self.about_button = QPushButton(about_icon, " About")
 
         top_button_layout.addWidget(self.define_region_button)
@@ -74,6 +74,7 @@ class SnapMosaic(QMainWindow):
         self.selection_overlay = None
         self.captured_widgets = []
         self.hotkey_listener = None
+        self.is_quitting = False
         self.resize_timer = QTimer(self)
         self.resize_timer.setSingleShot(True)
         self.resize_timer.timeout.connect(self.redraw_grid)
@@ -81,6 +82,7 @@ class SnapMosaic(QMainWindow):
         # Load config and start services
         self.load_app_config()
         self.start_hotkey_listener()
+        self.setup_tray_icon()
 
     def load_app_config(self):
         # Load capture region from config
@@ -253,15 +255,22 @@ class SnapMosaic(QMainWindow):
         print("Grid and in-memory image list cleared.")
 
     def closeEvent(self, event):
-        # Save window geometry
-        geom = self.geometry()
-        self.config.set('window_geometry', {'x': geom.x(), 'y': geom.y(), 'width': geom.width(), 'height': geom.height()})
+        if self.is_quitting:
+            super().closeEvent(event)
+            return
 
-        # Stop hotkey listener
-        if self.hotkey_listener:
-            self.hotkey_listener.stop()
-            
-        super().closeEvent(event)
+        if self.config.get('minimize_to_tray'):
+            event.ignore()
+            self.hide()
+            if self.config.get('show_tray_notification'):
+                self.tray_icon.showMessage(
+                    "SnapMosaic",
+                    "Application is still running in the system tray.",
+                    QSystemTrayIcon.Information,
+                    2000
+                )
+        else:
+            self.quit_application()
 
     def resizeEvent(self, event):
         super().resizeEvent(event)
@@ -298,6 +307,60 @@ class SnapMosaic(QMainWindow):
     def open_about(self):
         dialog = AboutDialog(self.version, self)
         dialog.exec()
+
+    def setup_tray_icon(self):
+        icon_path = resource_path('assets/SnapMosaic.png')
+        if not os.path.exists(icon_path):
+            # Fallback icon in case assets are not found
+            icon_path = resource_path('snap_mosaic/icons/settings.svg')
+
+        self.tray_icon = QSystemTrayIcon(QIcon(icon_path), self)
+        self.tray_icon.setToolTip("SnapMosaic")
+
+        menu = QMenu(self)
+        show_action = menu.addAction("Show Window")
+        show_action.triggered.connect(self.show_window)
+
+        define_region_action = menu.addAction("Define new Region")
+        define_region_action.triggered.connect(self.define_region)
+
+        menu.addSeparator()
+
+        quit_action = menu.addAction("Quit")
+        quit_action.triggered.connect(self.quit_application)
+
+        self.tray_icon.setContextMenu(menu)
+        self.tray_icon.activated.connect(self.tray_icon_activated)
+        self.tray_icon.show()
+
+    def tray_icon_activated(self, reason):
+        # A single-click (Trigger) shows/hides the window.
+        # Note: On some platforms, a right-click can also emit a Trigger signal,
+        # which might cause the window to show unexpectedly after the context menu.
+        # However, single-click is the most intuitive primary action.
+        if reason == QSystemTrayIcon.ActivationReason.Trigger:
+            self.toggle_window_visibility()
+
+    def toggle_window_visibility(self):
+        if self.isVisible():
+            self.hide()
+        else:
+            self.show_window()
+
+    def show_window(self):
+        self.showNormal() # Restore from minimized state
+        self.activateWindow() # Bring to front
+
+    def quit_application(self):
+        self.is_quitting = True
+        # Save window geometry
+        geom = self.geometry()
+        self.config.set('window_geometry', {'x': geom.x(), 'y': geom.y(), 'width': geom.width(), 'height': geom.height()})
+        # Stop hotkey listener
+        if self.hotkey_listener:
+            self.hotkey_listener.stop()
+        self.tray_icon.hide()
+        QApplication.instance().quit()
 
     def redraw_grid(self):
         # Clear the existing layout first
