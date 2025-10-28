@@ -8,6 +8,8 @@ A simple and efficient screen capture and review utility, built with Python and 
 
 SnapMosaic allows you to define a specific region on your screen and capture it multiple times with a global hotkey. Captured images are displayed in a responsive grid, perfect for comparing screenshots, tracking changes, or creating step-by-step guides.
 
+![SnapMosaic Screenshot](https://github.com/MiDevel/SnapMosaic/blob/main/docs/snap-mosaic.png?raw=true)
+
 ## Features
 
 -   **Capture Region**: Define a persistent screen region for repeated captures.
