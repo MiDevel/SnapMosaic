@@ -50,6 +50,8 @@ class Config:
             'show_tray_notification': True,
             'sounds_enabled': True,
             'max_display_width': 500,
+            'auto_snap_hotkey': 'f8',
+            'auto_snap_interval': 10,
             'auto_save_enabled': False,
             'auto_save_location': default_save_path,
             'auto_save_prefix': 'SnapMosaic',

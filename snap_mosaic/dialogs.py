@@ -14,6 +14,7 @@ class SettingsDialog(QDialog):
         self.setMinimumWidth(500)
         self.config = config
         self.new_hotkey = self.config.get('hotkey')
+        self.new_auto_snap_hotkey = self.config.get('auto_snap_hotkey')
 
         # Main layout for the dialog
         main_layout = QVBoxLayout(self)
@@ -21,10 +22,12 @@ class SettingsDialog(QDialog):
 
         # Create tabs
         general_tab = self.create_general_tab()
+        auto_snap_tab = self.create_auto_snap_tab()
         auto_save_tab = self.create_auto_save_tab()
 
         # Add tabs
         tab_widget.addTab(general_tab, "General")
+        tab_widget.addTab(auto_snap_tab, "Auto-Snap")
         tab_widget.addTab(auto_save_tab, "Auto-Save")
 
         main_layout.addWidget(tab_widget)
@@ -89,6 +92,39 @@ class SettingsDialog(QDialog):
 
         layout.addStretch()
         return general_tab
+
+    def create_auto_snap_tab(self):
+        auto_snap_tab = QWidget()
+        layout = QVBoxLayout(auto_snap_tab)
+
+        # Description
+        desc_label = QLabel("Auto-Snap automatically captures the defined region at a set interval.")
+        desc_label.setWordWrap(True)
+        layout.addWidget(desc_label)
+        layout.addSpacing(10)
+
+        # Auto-snap toggle hotkey
+        hotkey_layout = QHBoxLayout()
+        hotkey_layout.addWidget(QLabel("Toggle Auto-Snap Hotkey:"))
+        self.auto_snap_hotkey_input = HotkeyInput(self.new_auto_snap_hotkey)
+        self.auto_snap_hotkey_input.key_captured.connect(self.set_new_auto_snap_hotkey)
+        hotkey_layout.addWidget(self.auto_snap_hotkey_input)
+        layout.addLayout(hotkey_layout)
+
+        # Capture interval
+        interval_layout = QHBoxLayout()
+        interval_layout.addWidget(QLabel("Capture Interval:"))
+        self.interval_spinbox = QSpinBox()
+        self.interval_spinbox.setRange(1, 3600)
+        self.interval_spinbox.setValue(self.config.get('auto_snap_interval', 10))
+        self.interval_spinbox.setSuffix(' seconds')
+        self.interval_spinbox.setToolTip("Time between automatic captures when Auto-Snap is enabled")
+        interval_layout.addWidget(self.interval_spinbox)
+        interval_layout.addStretch()
+        layout.addLayout(interval_layout)
+
+        layout.addStretch()
+        return auto_snap_tab
 
     def create_auto_save_tab(self):
         auto_save_tab = QWidget()
@@ -155,6 +191,9 @@ class SettingsDialog(QDialog):
     def set_new_hotkey(self, hotkey):
         self.new_hotkey = hotkey
 
+    def set_new_auto_snap_hotkey(self, hotkey):
+        self.new_auto_snap_hotkey = hotkey
+
     def browse_for_folder(self):
         directory = QFileDialog.getExistingDirectory(
             self,
@@ -176,6 +215,9 @@ class SettingsDialog(QDialog):
         self.config.set('show_tray_notification', self.show_tray_notification_checkbox.isChecked())
         self.config.set('sounds_enabled', self.sounds_enabled_checkbox.isChecked())
         self.config.set('max_display_width', self.max_width_spinbox.value())
+
+        self.config.set('auto_snap_hotkey', self.new_auto_snap_hotkey)
+        self.config.set('auto_snap_interval', self.interval_spinbox.value())
 
         self.config.set('auto_save_enabled', self.auto_save_group.isChecked())
         self.config.set('auto_save_location', self.location_edit.text())

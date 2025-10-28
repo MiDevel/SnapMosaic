@@ -9,6 +9,7 @@ This document provides essential context and guidelines for AI assistants workin
 **Key Features:**
 - Multi-monitor support with High-DPI correctness
 - Global hotkey capture (configurable)
+- Auto-snap mode with configurable interval
 - Responsive image grid with hover interactions
 - Auto-save functionality
 - System tray integration
@@ -84,7 +85,7 @@ SnapMosaic/
    - Auto-saves on any change
 
 7. **`SettingsDialog` (`dialogs.py`)**
-   - Tabbed interface (General, Auto-Save)
+   - Tabbed interface (General, Auto-Snap, Auto-Save)
    - All user-configurable options in one place
 
 ## Critical Implementation Details
@@ -172,9 +173,31 @@ if self.config.get('sounds_enabled', True):
 - `save_image()` and `copy_image_to_clipboard()` use `original_pixmap`
 - Changing the max width in settings triggers immediate grid redraw
 
+### 8. Auto-Snap Mode
+
+**Purpose:** Automatically capture the defined region at regular intervals without manual intervention.
+
+**Implementation:**
+- Configurable toggle hotkey (default F8)
+- Configurable capture interval (default 10 seconds, range 1-3600s)
+- Visual button state with green background when active
+- QTimer-based interval triggering
+- Integrates with auto-save if enabled
+- Automatically stops when defining new region
+
+**Key design:**
+- `auto_button` is a checkable QPushButton with custom styling
+- `is_auto_snapping` flag tracks state
+- `auto_snap_timer` QTimer triggers `trigger_capture()` at intervals
+- `start_auto_snap()` validates region exists before starting
+- `stop_auto_snap()` called on region definition and app quit
+- Separate hotkey listener for toggle functionality
+
 **Settings stored in `SnapMosaic.json`:**
 - `capture_region`: Last selected region (x, y, width, height)
-- `hotkey`: Global hotkey string
+- `hotkey`: Global hotkey string for manual capture
+- `auto_snap_hotkey`: Global hotkey string for toggling auto-snap
+- `auto_snap_interval`: Interval in seconds between auto-captures
 - `auto_copy_to_clipboard`: Boolean
 - `max_display_width`: Maximum width (in pixels) for displaying large captures
 - `auto_save_*`: Auto-save configuration
@@ -187,9 +210,10 @@ if self.config.get('sounds_enabled', True):
 ### Adding a New Setting
 
 1. Add default value in `config.py` → `get_default_config()`
-2. Add UI control in `dialogs.py` → `SettingsDialog`
+2. Add UI control in `dialogs.py` → appropriate tab in `SettingsDialog`
 3. Load setting in `main_window.py` → `load_app_config()`
 4. Save setting when changed using `self.config.set(key, value)`
+5. Handle setting changes in `open_settings()` if live updates needed
 
 ### Adding a New Icon
 
@@ -225,10 +249,12 @@ The `.spec` file is already configured to bundle all necessary assets.
 
 1. **playsound version pinned to 1.2.2** - Later versions have breaking changes
 2. **No video capture** - By design, only still images
-3. **Hotkey requires restart** - Changing hotkey requires stopping/starting the listener
+3. **Hotkey requires restart** - Changing hotkeys requires stopping/starting the listeners
 4. **Grid column calculation** - Based on display width of images
 5. **System tray on Linux** - May have limited support depending on desktop environment
 6. **Display scaling non-retroactive** - Changing max_display_width doesn't rescale existing captures (by design - avoids reprocessing)
+7. **Auto-snap state not persisted** - Auto-snap always starts disabled on app launch (by design - prevents unwanted captures)
+8. **Auto-snap interval changes** - Live-updated if auto-snap is running, otherwise takes effect on next start
 
 ## Things to NEVER Do
 
@@ -259,6 +285,8 @@ The `.spec` file is already configured to bundle all necessary assets.
 3. Does this maintain backward compatibility with existing configs?
 4. Will this block the UI thread?
 5. Is there a Qt-native solution instead of adding a new dependency?
+6. If adding timers, are they properly stopped on cleanup?
+7. If adding hotkeys, is there proper error handling for registration failures?
 
 ## Useful Development Commands
 
