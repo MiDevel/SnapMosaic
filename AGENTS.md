@@ -184,6 +184,8 @@ if self.config.get('sounds_enabled', True):
 - QTimer-based interval triggering
 - Integrates with auto-save if enabled
 - Automatically stops when defining new region
+- Visual feedback: button flashes bright green on each capture
+- Keyboard shortcut: Escape key stops auto-snap mode
 
 **Key design:**
 - `auto_button` is a checkable QPushButton with custom styling
@@ -192,6 +194,50 @@ if self.config.get('sounds_enabled', True):
 - `start_auto_snap()` validates region exists before starting
 - `stop_auto_snap()` called on region definition and app quit
 - Separate hotkey listener for toggle functionality
+- Visual feedback: button flashes bright green when capture occurs
+- Keyboard shortcut: `Escape` key stops auto-snap mode
+
+### 9. Confirmation Dialogs System
+
+**Purpose:** Prevent accidental data loss while allowing power users to disable repetitive confirmations.
+
+**Implementation:**
+- Configurable confirmation for destructive operations (Clear All)
+- "Don't ask again" checkbox in each confirmation dialog
+- Settings stored in `confirmations` dictionary in config
+- "Reset All Confirmations" button in General settings to re-enable all dialogs
+- Forward-compatible: new confirmations can be added easily
+
+**Key design:**
+- Check confirmation preference before showing dialog
+- `QCheckBox` in `QMessageBox` for "Don't ask again" option
+- Update config immediately when preference changes
+- Reset button sets all confirmation flags back to `True`
+
+### 10. Keyboard Shortcuts
+
+**Purpose:** Provide power users with fast keyboard-driven workflow.
+
+**Implemented shortcuts:**
+- `F7` (configurable): Manual capture
+- `F8` (configurable): Toggle auto-snap mode
+- `Escape`: Stop auto-snap mode if running
+- `Ctrl+S`: Save last captured or currently hovered image
+- `Ctrl+C`: Copy last captured or currently hovered image to clipboard
+- `Delete`: Delete currently hovered image
+
+**Implementation:**
+- Main window overrides `keyPressEvent()` to handle shortcuts
+- Event filter tracks last hovered widget for context-aware shortcuts
+- Falls back to last captured image if no hover
+- All shortcuts shown in tooltips for discoverability
+- Keyboard shortcuts work globally within the application window
+
+**Key design:**
+- `last_hovered_widget` tracks current hover state
+- `eventFilter()` monitors Enter/Leave events on HoverLabel widgets
+- `installEventFilter()` called on each image widget
+- Tooltips updated to show keyboard shortcuts alongside actions
 
 **Settings stored in `SnapMosaic.json`:**
 - `capture_region`: Last selected region (x, y, width, height)
@@ -200,6 +246,7 @@ if self.config.get('sounds_enabled', True):
 - `auto_snap_interval`: Interval in seconds between auto-captures
 - `auto_copy_to_clipboard`: Boolean
 - `max_display_width`: Maximum width (in pixels) for displaying large captures
+- `confirmations`: Dictionary of confirmation dialog preferences (e.g., clear_all)
 - `auto_save_*`: Auto-save configuration
 - `minimize_to_tray`, `show_tray_notification`: System tray options
 - `sounds_enabled`: Sound effects toggle
@@ -268,9 +315,12 @@ The `.spec` file is already configured to bundle all necessary assets.
 ## Documentation Hierarchy
 
 1. **This file (AGENTS.md)** - Quick reference for AI assistants
-2. **docs/project_summary.md** - Detailed technical overview with rationale
-3. **README.md** - User-facing documentation
-4. **Code comments** - Inline documentation for complex logic
+2. **ROADMAP.md** - Feature planning and development timeline (must be kept updated)
+3. **docs/project_summary.md** - Detailed technical overview with rationale
+4. **README.md** - User-facing documentation
+5. **Code comments** - Inline documentation for complex logic
+
+**Important:** When adding new features, always update ROADMAP.md to mark completed items and add new planned features based on user feedback.
 
 ## Version Information
 

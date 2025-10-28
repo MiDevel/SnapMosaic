@@ -2,7 +2,7 @@ from PySide6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QPushButton, 
     QLabel, QLineEdit, QCheckBox, QGroupBox, 
     QFormLayout, QRadioButton, QComboBox, QSpinBox,
-    QFileDialog, QDialogButtonBox, QTabWidget, QWidget
+    QFileDialog, QDialogButtonBox, QTabWidget, QWidget, QMessageBox
 )
 from PySide6.QtCore import Qt
 from .hotkey import HotkeyInput
@@ -90,8 +90,24 @@ class SettingsDialog(QDialog):
         max_width_layout.addStretch()
         layout.addLayout(max_width_layout)
 
+        # Reset confirmations button
+        reset_layout = QHBoxLayout()
+        reset_label = QLabel("Confirmation dialogs:")
+        self.reset_confirmations_button = QPushButton("Reset All Confirmations")
+        self.reset_confirmations_button.setToolTip("Re-enable all \"Don't ask again\" confirmation dialogs")
+        self.reset_confirmations_button.clicked.connect(self.reset_confirmations)
+        reset_layout.addWidget(reset_label)
+        reset_layout.addWidget(self.reset_confirmations_button)
+        reset_layout.addStretch()
+        layout.addLayout(reset_layout)
+
         layout.addStretch()
         return general_tab
+
+    def reset_confirmations(self):
+        self.config.set('confirmations', {'clear_all': True})
+        QMessageBox.information(self, "Confirmations Reset", 
+                              "All confirmation dialogs have been re-enabled.")
 
     def create_auto_snap_tab(self):
         auto_snap_tab = QWidget()
