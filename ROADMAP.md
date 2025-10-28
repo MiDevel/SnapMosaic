@@ -261,5 +261,3 @@ We welcome contributions! Please see:
 ---
 
 **Last Updated:** 2025-10-27  
-**Current Version:** 2.0.0 (first stable release)  
-**Next Milestone:** v2.10.0

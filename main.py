@@ -8,6 +8,8 @@ from snap_mosaic.utils import resource_path
 def main():
     """Main function to run the SnapMosaic application."""
     app = QApplication(sys.argv)
+    app.setOrganizationName("mirekw")
+    app.setApplicationName("SnapMosaic")
 
     # --- Set Application Icon ---
     # Use the .ico on Windows for best results, otherwise use the .svg

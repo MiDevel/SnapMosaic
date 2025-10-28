@@ -42,9 +42,13 @@ SnapMosaic/
 ├── assets/                   # Application icons (.ico, .svg)
 ├── docs/                     # Documentation
 │   └── project_summary.md    # Detailed technical overview
-├── SnapMosaic.json           # User configuration (generated at runtime)
 ├── SnapMosaic.spec           # PyInstaller specification
 └── requirements.txt          # Python dependencies
+
+Note: User configuration (SnapMosaic.json) is stored in platform-specific locations:
+- Windows: %APPDATA%\mirekw\SnapMosaic\SnapMosaic.json
+- macOS: ~/Library/Application Support/mirekw/SnapMosaic/SnapMosaic.json
+- Linux: ~/.local/share/mirekw/SnapMosaic/SnapMosaic.json
 ```
 
 ## Core Architecture
@@ -83,6 +87,7 @@ SnapMosaic/
    - Forward-compatible configuration management
    - Merges default settings with user settings
    - Auto-saves on any change
+   - Stores config in platform-specific location using `QStandardPaths.AppDataLocation`
 
 7. **`SettingsDialog` (`dialogs.py`)**
    - Tabbed interface (General, Auto-Snap, Auto-Save)
@@ -239,7 +244,13 @@ if self.config.get('sounds_enabled', True):
 - `installEventFilter()` called on each image widget
 - Tooltips updated to show keyboard shortcuts alongside actions
 
-**Settings stored in `SnapMosaic.json`:**
+**Settings stored in platform-specific config file:**
+Config file location:
+- Windows: `%APPDATA%\mirekw\SnapMosaic\SnapMosaic.json` (Roaming)
+- macOS: `~/Library/Application Support/mirekw/SnapMosaic/SnapMosaic.json`
+- Linux: `~/.local/share/mirekw/SnapMosaic/SnapMosaic.json`
+
+Settings include:
 - `capture_region`: Last selected region (x, y, width, height)
 - `hotkey`: Global hotkey string for manual capture
 - `auto_snap_hotkey`: Global hotkey string for toggling auto-snap

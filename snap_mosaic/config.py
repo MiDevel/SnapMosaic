@@ -3,8 +3,13 @@ import os
 from PySide6.QtCore import QStandardPaths
 
 class Config:
-    def __init__(self, file_path='SnapMosaic.json'):
-        self.file_path = file_path
+    def __init__(self, file_path=None):
+        if file_path is None:
+            config_dir = QStandardPaths.writableLocation(QStandardPaths.StandardLocation.AppDataLocation)
+            os.makedirs(config_dir, exist_ok=True)
+            self.file_path = os.path.join(config_dir, 'SnapMosaic.json')
+        else:
+            self.file_path = file_path
         self.settings = self.load_config()
 
     def load_config(self):
