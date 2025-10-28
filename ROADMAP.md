@@ -10,7 +10,7 @@ This document outlines the planned features and improvements for SnapMosaic.
 
 ### Critical Pre-Release Items
 
-- [ ] **Clear All Confirmation Dialog**
+- [x] **Clear All Confirmation Dialog** ✅ COMPLETED
   - Add confirmation dialog before clearing all captures
   - Option to "Don't ask again" with persistence in config
   - Priority: **HIGH** - Prevents accidental data loss
@@ -20,17 +20,22 @@ This document outlines the planned features and improvements for SnapMosaic.
   - `Ctrl+S` - Quick save selected/last image
   - `Delete` key - Delete selected/hovered image
   - `Ctrl+C` - Copy selected/hovered image to clipboard
-  - `Escape` - Stop auto-snap mode if running
+  - `Escape` - Stop auto-snap mode if running ✅ COMPLETED
   - Display shortcuts in tooltips/status bar
   - Priority: **HIGH** - Significantly improves UX
   - Estimated: 2-3 hours
 
-- [ ] **Visual Feedback for Auto-Snap**
+- [x] **Visual Feedback for Auto-Snap** ✅ COMPLETED
   - Brief visual indicator when capture occurs in auto-snap mode
   - Optional capture counter in status bar or button tooltip
   - Helps user confirm automation is working
   - Priority: **MEDIUM** - Improves confidence in automation
   - Estimated: 1 hour
+
+- [x] **Settings - Reset Confirmations** ✅ COMPLETED
+  - Button in General settings to re-enable all confirmation dialogs
+  - Priority: **HIGH** - Complements "Don't ask again" feature
+  - Estimated: 15 minutes
 
 - [ ] **Platform Testing**
   - [ ] Windows (Primary)

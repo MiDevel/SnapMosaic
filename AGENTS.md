@@ -184,6 +184,8 @@ if self.config.get('sounds_enabled', True):
 - QTimer-based interval triggering
 - Integrates with auto-save if enabled
 - Automatically stops when defining new region
+- Visual feedback: button flashes bright green on each capture
+- Keyboard shortcut: Escape key stops auto-snap mode
 
 **Key design:**
 - `auto_button` is a checkable QPushButton with custom styling
@@ -192,6 +194,27 @@ if self.config.get('sounds_enabled', True):
 - `start_auto_snap()` validates region exists before starting
 - `stop_auto_snap()` called on region definition and app quit
 - Separate hotkey listener for toggle functionality
+- Visual feedback: button flashes bright green when capture occurs
+- Keyboard shortcut: `Escape` key stops auto-snap mode
+
+### 9. Confirmation Dialogs System
+
+**Purpose:** Prevent accidental data loss while allowing power users to disable repetitive confirmations.
+
+**Implementation:**
+- Configurable confirmation for destructive operations (Clear All)
+- "Don't ask again" checkbox in each confirmation dialog
+- Settings stored in `confirmations` dictionary in config
+- "Reset All Confirmations" button in General settings to re-enable all dialogs
+- Forward-compatible: new confirmations can be added easily
+
+**Key design:**
+- Check confirmation preference before showing dialog
+- `QCheckBox` in `QMessageBox` for "Don't ask again" option
+- Update config immediately when preference changes
+- Reset button sets all confirmation flags back to `True`
+- Visual feedback: button flashes bright green when capture occurs
+- Keyboard shortcut: `Escape` key stops auto-snap mode
 
 **Settings stored in `SnapMosaic.json`:**
 - `capture_region`: Last selected region (x, y, width, height)
@@ -200,6 +223,7 @@ if self.config.get('sounds_enabled', True):
 - `auto_snap_interval`: Interval in seconds between auto-captures
 - `auto_copy_to_clipboard`: Boolean
 - `max_display_width`: Maximum width (in pixels) for displaying large captures
+- `confirmations`: Dictionary of confirmation dialog preferences (e.g., clear_all)
 - `auto_save_*`: Auto-save configuration
 - `minimize_to_tray`, `show_tray_notification`: System tray options
 - `sounds_enabled`: Sound effects toggle

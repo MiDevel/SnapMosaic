@@ -5,7 +5,7 @@ from PySide6.QtWidgets import (
     QVBoxLayout, QHBoxLayout, QPushButton,
     QScrollArea, QGridLayout,
     QFileDialog, QMessageBox, QStyle,
-    QSystemTrayIcon, QMenu
+    QSystemTrayIcon, QMenu, QCheckBox
 )
 from PySide6.QtGui import QPixmap, QIcon
 from PySide6.QtCore import Qt, QRect, QThread, QTimer
@@ -165,6 +165,20 @@ class SnapMosaic(QMainWindow):
         self.update_auto_button_style()
         print("Auto-Snap stopped")
 
+    def flash_auto_button(self):
+        """Briefly flash the auto button to provide visual feedback during auto-snap."""
+        original_style = self.auto_button.styleSheet()
+        # Brighter flash
+        self.auto_button.setStyleSheet("""
+            QPushButton {
+                background-color: #66FF66;
+                color: white;
+                font-weight: bold;
+            }
+        """)
+        # Reset after 150ms
+        QTimer.singleShot(150, lambda: self.auto_button.setStyleSheet(original_style))
+
     def restore_geometry(self):
         geom_data = self.config.get('window_geometry')
         if geom_data:
@@ -248,6 +262,10 @@ class SnapMosaic(QMainWindow):
             return
 
         self.play_sound('snap')
+        
+        # Visual feedback for auto-snap mode
+        if self.is_auto_snapping:
+            self.flash_auto_button()
 
         # Auto-copy to clipboard if enabled
         if self.config.get('auto_copy_to_clipboard', False):
@@ -342,10 +360,49 @@ class SnapMosaic(QMainWindow):
             image_container.update() # Trigger repaint to show saved checkmark
 
     def clear_grid(self):
+        if not self.captured_widgets:
+            return
+        
+        # Check if we should show confirmation
+        confirmations = self.config.get('confirmations', {})
+        if confirmations.get('clear_all', True):
+            msg_box = QMessageBox(self)
+            msg_box.setWindowTitle("Clear All Captures")
+            msg_box.setText("Are you sure you want to clear all captures?")
+            msg_box.setInformativeText("This will remove all images from the grid. Unsaved captures will be lost.")
+            msg_box.setStandardButtons(QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
+            msg_box.setDefaultButton(QMessageBox.StandardButton.No)
+            msg_box.setIcon(QMessageBox.Icon.Question)
+            
+            # Add "Don't ask again" checkbox
+            dont_ask_checkbox = QCheckBox("Don't ask again")
+            msg_box.setCheckBox(dont_ask_checkbox)
+            
+            result = msg_box.exec()
+            
+            # Save preference if checkbox was checked
+            if dont_ask_checkbox.isChecked():
+                confirmations['clear_all'] = False
+                self.config.set('confirmations', confirmations)
+            
+            if result != QMessageBox.StandardButton.Yes:
+                return
+        
         for widget in self.captured_widgets[:]: # Iterate over a copy
             self.delete_image(widget)
         self.captured_widgets.clear()
         print("Grid and in-memory image list cleared.")
+
+    def keyPressEvent(self, event):
+        """Handle keyboard shortcuts."""
+        # Escape key stops auto-snap if running
+        if event.key() == Qt.Key.Key_Escape:
+            if self.is_auto_snapping:
+                self.stop_auto_snap()
+                event.accept()
+                return
+        
+        super().keyPressEvent(event)
 
     def closeEvent(self, event):
         if self.is_quitting:
