@@ -83,13 +83,13 @@ class HoverLabel(QLabel):
 
             if self.copy_rect.contains(pos):
                 self.hovered_icon = 'copy'
-                QToolTip.showText(event.globalPos(), "Copy to Clipboard", self)
+                QToolTip.showText(event.globalPos(), "Copy to Clipboard (Ctrl+C)", self)
             elif self.save_rect.contains(pos):
                 self.hovered_icon = 'save'
-                QToolTip.showText(event.globalPos(), "Save Image", self)
+                QToolTip.showText(event.globalPos(), "Save Image (Ctrl+S)", self)
             elif self.delete_rect.contains(pos):
                 self.hovered_icon = 'delete'
-                QToolTip.showText(event.globalPos(), "Delete Image", self)
+                QToolTip.showText(event.globalPos(), "Delete Image (Delete)", self)
             else:
                 self.hovered_icon = None
                 QToolTip.hideText()

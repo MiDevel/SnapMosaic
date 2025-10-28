@@ -37,16 +37,23 @@ class SnapMosaic(QMainWindow):
         # Top Button Bar
         top_button_layout = QHBoxLayout()
         self.define_region_button = QPushButton("Define Region")
+        self.define_region_button.setToolTip("Define a new screen region to capture")
+        
         self.snap_button = QPushButton() # Text set in update_snap_button_text
+        
         self.auto_button = QPushButton() # Text set in update_auto_button_text
         self.auto_button.setCheckable(True)
+        
         self.clear_button = QPushButton("Clear All")
+        self.clear_button.setToolTip("Clear all captures from grid")
 
         settings_icon = QIcon(resource_path('snap_mosaic/icons/settings.svg'))
         self.settings_button = QPushButton(settings_icon, " Settings")
+        self.settings_button.setToolTip("Open settings")
 
         about_icon = QIcon(resource_path('snap_mosaic/icons/about.svg'))
         self.about_button = QPushButton(about_icon, " About")
+        self.about_button.setToolTip("About SnapMosaic")
 
         top_button_layout.addWidget(self.define_region_button)
         top_button_layout.addWidget(self.snap_button)
@@ -88,6 +95,7 @@ class SnapMosaic(QMainWindow):
         self.resize_timer = QTimer(self)
         self.resize_timer.setSingleShot(True)
         self.resize_timer.timeout.connect(self.redraw_grid)
+        self.last_hovered_widget = None  # Track last hovered widget for keyboard shortcuts
 
 
 
@@ -196,7 +204,17 @@ class SnapMosaic(QMainWindow):
         # Stop auto-snap if running since we're clearing the grid and defining new region
         if self.is_auto_snapping:
             self.stop_auto_snap()
-        self.clear_grid()
+        
+        # Check if there are captures that need to be cleared first
+        if self.captured_widgets:
+            QMessageBox.information(
+                self,
+                "Clear Captures First",
+                "Please clear all captures before defining a new region.\n\n"
+                "Click 'Clear All' button to remove current captures, then try again."
+            )
+            return
+        
         self.hide()
         screen = QApplication.primaryScreen()
         virtual_desktop_rect = screen.virtualGeometry()
@@ -284,6 +302,9 @@ class SnapMosaic(QMainWindow):
         image_container.delete_requested.connect(self.delete_image)
         image_container.save_requested.connect(self.save_image)
         image_container.copy_requested.connect(self.copy_image_to_clipboard)
+        
+        # Connect hover events for keyboard shortcuts tracking
+        image_container.installEventFilter(self)
 
         # Auto-save if enabled (this will also set the 'saved' flag)
         self.auto_save_image(image_container)
@@ -359,17 +380,29 @@ class SnapMosaic(QMainWindow):
             image_container.is_saved = True
             image_container.update() # Trigger repaint to show saved checkmark
 
-    def clear_grid(self):
+    def clear_grid_with_confirmation(self, reason=None):
+        """
+        Clear grid with user confirmation if there are captures.
+        
+        Args:
+            reason: Optional string explaining why clearing is needed (currently unused)
+        
+        Returns:
+            True if grid was cleared or was already empty.
+            False if user cancelled.
+        """
         if not self.captured_widgets:
-            return
+            return True  # Nothing to clear, proceed
         
         # Check if we should show confirmation
         confirmations = self.config.get('confirmations', {})
         if confirmations.get('clear_all', True):
             msg_box = QMessageBox(self)
+            msg_box.setModal(True)
             msg_box.setWindowTitle("Clear All Captures")
             msg_box.setText("Are you sure you want to clear all captures?")
-            msg_box.setInformativeText("This will remove all images from the grid. Unsaved captures will be lost.")
+            msg_box.setInformativeText("This will remove all images from the grid.\nUnsaved captures will be lost.")
+            
             msg_box.setStandardButtons(QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
             msg_box.setDefaultButton(QMessageBox.StandardButton.No)
             msg_box.setIcon(QMessageBox.Icon.Question)
@@ -386,12 +419,18 @@ class SnapMosaic(QMainWindow):
                 self.config.set('confirmations', confirmations)
             
             if result != QMessageBox.StandardButton.Yes:
-                return
+                return False  # User cancelled
         
-        for widget in self.captured_widgets[:]: # Iterate over a copy
+        # Clear the grid
+        for widget in self.captured_widgets[:]:
             self.delete_image(widget)
         self.captured_widgets.clear()
         print("Grid and in-memory image list cleared.")
+        return True  # Successfully cleared
+
+    def clear_grid(self):
+        """Clear grid - called from Clear All button."""
+        self.clear_grid_with_confirmation()
 
     def keyPressEvent(self, event):
         """Handle keyboard shortcuts."""
@@ -402,7 +441,41 @@ class SnapMosaic(QMainWindow):
                 event.accept()
                 return
         
+        # Ctrl+S - Quick save the last captured or hovered image
+        if event.key() == Qt.Key.Key_S and event.modifiers() == Qt.KeyboardModifier.ControlModifier:
+            target_widget = self.last_hovered_widget if self.last_hovered_widget else (self.captured_widgets[0] if self.captured_widgets else None)
+            if target_widget:
+                self.save_image(target_widget)
+                event.accept()
+                return
+        
+        # Ctrl+C - Copy the last captured or hovered image
+        if event.key() == Qt.Key.Key_C and event.modifiers() == Qt.KeyboardModifier.ControlModifier:
+            target_widget = self.last_hovered_widget if self.last_hovered_widget else (self.captured_widgets[0] if self.captured_widgets else None)
+            if target_widget:
+                self.copy_image_to_clipboard(target_widget, quiet=True)
+                event.accept()
+                return
+        
+        # Delete key - Delete the hovered image
+        if event.key() == Qt.Key.Key_Delete:
+            if self.last_hovered_widget:
+                self.delete_image(self.last_hovered_widget)
+                event.accept()
+                return
+        
         super().keyPressEvent(event)
+
+    def eventFilter(self, obj, event):
+        """Track which widget is being hovered for keyboard shortcuts."""
+        if isinstance(obj, HoverLabel):
+            if event.type() == event.Type.Enter:
+                self.last_hovered_widget = obj
+            elif event.type() == event.Type.Leave:
+                if self.last_hovered_widget == obj:
+                    self.last_hovered_widget = None
+        
+        return super().eventFilter(obj, event)
 
     def closeEvent(self, event):
         if self.is_quitting:
@@ -428,9 +501,15 @@ class SnapMosaic(QMainWindow):
 
     def update_snap_button_text(self):
         self.snap_button.setText(f"Snap [{self.hotkey.upper()}]")
+        self.snap_button.setToolTip(f"Capture the defined region ({self.hotkey.upper()})")
 
     def update_auto_button_text(self):
         self.auto_button.setText(f"Auto [{self.auto_snap_hotkey.upper()}]")
+        interval = self.config.get('auto_snap_interval', 10)
+        self.auto_button.setToolTip(
+            f"Toggle automatic captures every {interval}s ({self.auto_snap_hotkey.upper()})\n"
+            f"Press Escape to stop"
+        )
 
     def update_auto_button_style(self):
         if self.is_auto_snapping:

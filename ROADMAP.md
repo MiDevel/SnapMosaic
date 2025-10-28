@@ -16,12 +16,12 @@ This document outlines the planned features and improvements for SnapMosaic.
   - Priority: **HIGH** - Prevents accidental data loss
   - Estimated: 30 minutes
 
-- [ ] **Keyboard Shortcuts Enhancement**
-  - `Ctrl+S` - Quick save selected/last image
-  - `Delete` key - Delete selected/hovered image
-  - `Ctrl+C` - Copy selected/hovered image to clipboard
+- [x] **Keyboard Shortcuts Enhancement** ✅ COMPLETED
+  - `Ctrl+S` - Quick save selected/last image ✅ COMPLETED
+  - `Delete` key - Delete selected/hovered image ✅ COMPLETED
+  - `Ctrl+C` - Copy selected/hovered image to clipboard ✅ COMPLETED
   - `Escape` - Stop auto-snap mode if running ✅ COMPLETED
-  - Display shortcuts in tooltips/status bar
+  - Display shortcuts in tooltips/status bar ✅ COMPLETED
   - Priority: **HIGH** - Significantly improves UX
   - Estimated: 2-3 hours
 
@@ -54,7 +54,7 @@ This document outlines the planned features and improvements for SnapMosaic.
 
 ---
 
-## 📋 Version 2.1.0 - Quick Wins (Post-Release)
+## 📋 Version 2.10.0 - Quick Wins (Post-Release)
 
 **Target:** 1-2 months after v2.0.0
 
@@ -93,7 +93,7 @@ This document outlines the planned features and improvements for SnapMosaic.
 
 ---
 
-## 🎨 Version 2.2.0 - Enhanced Viewing
+## 🎨 Version 2.20.0 - Enhanced Viewing
 
 **Target:** 3-4 months after v2.0.0
 
@@ -127,7 +127,7 @@ This document outlines the planned features and improvements for SnapMosaic.
 
 ---
 
-## 🔧 Version 2.3.0 - Advanced Features
+## 🔧 Version 2.30.0 - Advanced Features
 
 **Target:** 6 months after v2.0.0
 
@@ -261,5 +261,5 @@ We welcome contributions! Please see:
 ---
 
 **Last Updated:** 2025-10-27  
-**Current Version:** 1.21.18 (pre-release)  
-**Next Milestone:** v2.0.0 Public Release
+**Current Version:** 2.0.0 (first stable release)  
+**Next Milestone:** v2.10.0

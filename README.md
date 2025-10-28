@@ -2,7 +2,7 @@
 
 [<img src="https://github.com/MiDevel/SnapMosaic/blob/main/assets/SnapMosaic.png?raw=true" width="125"/>](image.png)
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) [![Version](https://img.shields.io/badge/version-1.21.18-blue.svg)](https://github.com/MiDevel/SnapMosaic/releases)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) [![Version](https://img.shields.io/badge/version-2.0.0-blue.svg)](https://github.com/MiDevel/SnapMosaic/releases)
 
 A simple and efficient screen capture and review utility, built with Python and PySide6.
 
@@ -90,11 +90,25 @@ python main.py
    - **Auto-Snap**: Toggle hotkey and capture interval
    - **Auto-Save**: Automatic file saving with custom naming and formats
 
+### Keyboard Shortcuts
+
+SnapMosaic supports keyboard shortcuts for efficient workflow:
+
+- **`F7`** (default, configurable): Capture the defined region
+- **`F8`** (default, configurable): Toggle Auto-Snap mode on/off
+- **`Escape`**: Stop Auto-Snap mode (when active)
+- **`Ctrl+S`**: Quick save the last captured or currently hovered image
+- **`Ctrl+C`**: Copy the last captured or currently hovered image to clipboard
+- **`Delete`**: Delete the currently hovered image
+
+*Tip: All shortcuts are shown in button and icon tooltips throughout the app.*
+
 ### Tips
 
 - **Large Captures**: Images wider than the configured max display width (default 500px) are automatically scaled down in the grid for easier viewing, but full resolution is always preserved for save/copy operations.
 - **Auto-Save Integration**: When Auto-Snap mode is active and Auto-Save is enabled, all captures are automatically saved to your configured location.
 - **System Tray**: Configure the app to minimize to system tray instead of closing, keeping hotkeys active in the background.
+- **Keyboard Power User**: Hover over an image and use `Ctrl+S`, `Ctrl+C`, or `Delete` for quick actions without clicking.
 
 ## Building an Executable
 

@@ -213,8 +213,31 @@ if self.config.get('sounds_enabled', True):
 - `QCheckBox` in `QMessageBox` for "Don't ask again" option
 - Update config immediately when preference changes
 - Reset button sets all confirmation flags back to `True`
-- Visual feedback: button flashes bright green when capture occurs
-- Keyboard shortcut: `Escape` key stops auto-snap mode
+
+### 10. Keyboard Shortcuts
+
+**Purpose:** Provide power users with fast keyboard-driven workflow.
+
+**Implemented shortcuts:**
+- `F7` (configurable): Manual capture
+- `F8` (configurable): Toggle auto-snap mode
+- `Escape`: Stop auto-snap mode if running
+- `Ctrl+S`: Save last captured or currently hovered image
+- `Ctrl+C`: Copy last captured or currently hovered image to clipboard
+- `Delete`: Delete currently hovered image
+
+**Implementation:**
+- Main window overrides `keyPressEvent()` to handle shortcuts
+- Event filter tracks last hovered widget for context-aware shortcuts
+- Falls back to last captured image if no hover
+- All shortcuts shown in tooltips for discoverability
+- Keyboard shortcuts work globally within the application window
+
+**Key design:**
+- `last_hovered_widget` tracks current hover state
+- `eventFilter()` monitors Enter/Leave events on HoverLabel widgets
+- `installEventFilter()` called on each image widget
+- Tooltips updated to show keyboard shortcuts alongside actions
 
 **Settings stored in `SnapMosaic.json`:**
 - `capture_region`: Last selected region (x, y, width, height)
@@ -292,9 +315,12 @@ The `.spec` file is already configured to bundle all necessary assets.
 ## Documentation Hierarchy
 
 1. **This file (AGENTS.md)** - Quick reference for AI assistants
-2. **docs/project_summary.md** - Detailed technical overview with rationale
-3. **README.md** - User-facing documentation
-4. **Code comments** - Inline documentation for complex logic
+2. **ROADMAP.md** - Feature planning and development timeline (must be kept updated)
+3. **docs/project_summary.md** - Detailed technical overview with rationale
+4. **README.md** - User-facing documentation
+5. **Code comments** - Inline documentation for complex logic
+
+**Important:** When adding new features, always update ROADMAP.md to mark completed items and add new planned features based on user feedback.
 
 ## Version Information
 
