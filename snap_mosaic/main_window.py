@@ -54,8 +54,6 @@ class SnapMosaic(QMainWindow):
         top_button_layout.addWidget(self.about_button)
         main_layout.addLayout(top_button_layout)
 
-
-
         # Scroll Area for captures
         self.scroll_area = QScrollArea()
         self.scroll_area.setWidgetResizable(True)
@@ -65,7 +63,6 @@ class SnapMosaic(QMainWindow):
         self.scroll_layout.setSpacing(10)
         self.scroll_layout.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignLeft)
 
-        main_layout.addLayout(top_button_layout)
         main_layout.addWidget(self.scroll_area)
 
         # --- Connections ---
@@ -208,8 +205,15 @@ class SnapMosaic(QMainWindow):
             QApplication.clipboard().setPixmap(pixmap)
             print("Image auto-copied to clipboard.")
 
-        # Create the image widget first
-        image_container = HoverLabel(pixmap)
+        # Scale for display if needed
+        max_width = self.config.get('max_display_width', 500)
+        display_pixmap = pixmap
+        if pixmap.width() > max_width:
+            display_pixmap = pixmap.scaledToWidth(max_width, Qt.TransformationMode.SmoothTransformation)
+            print(f"Scaled image from {pixmap.width()}x{pixmap.height()} to {display_pixmap.width()}x{display_pixmap.height()} for display")
+
+        # Create the image widget with both display and original pixmaps
+        image_container = HoverLabel(display_pixmap, pixmap)
         image_container.delete_requested.connect(self.delete_image)
         image_container.save_requested.connect(self.save_image)
         image_container.copy_requested.connect(self.copy_image_to_clipboard)
@@ -228,7 +232,7 @@ class SnapMosaic(QMainWindow):
             "PNG Images (*.png);;JPEG Images (*.jpg *.jpeg)"
         )
         if file_path:
-            pixmap = hover_label.pixmap()
+            pixmap = hover_label.original_pixmap
             if not file_path.lower().endswith(('.png', '.jpg', '.jpeg')):
                 file_path += '.png' # Default to png if no valid extension
             pixmap.save(file_path)
@@ -246,7 +250,7 @@ class SnapMosaic(QMainWindow):
             QTimer.singleShot(0, self.redraw_grid)
 
     def copy_image_to_clipboard(self, hover_label, quiet=False):
-        QApplication.clipboard().setPixmap(hover_label.pixmap())
+        QApplication.clipboard().setPixmap(hover_label.original_pixmap)
         if not quiet:
             self.play_sound('clipboard')
         print("Image copied to clipboard.")
@@ -259,7 +263,7 @@ class SnapMosaic(QMainWindow):
         prefix = self.config.get('auto_save_prefix')
         suffix_type = self.config.get('auto_save_suffix_type')
         img_format = self.config.get('auto_save_format')
-        pixmap = image_container.pixmap()
+        pixmap = image_container.original_pixmap
 
         try:
             os.makedirs(location, exist_ok=True)
@@ -321,6 +325,7 @@ class SnapMosaic(QMainWindow):
 
     def open_settings(self):
         previous_hotkey = self.config.get('hotkey')
+        previous_max_width = self.config.get('max_display_width', 500)
         dialog = SettingsDialog(self.config, self)
 
         if dialog.exec():
@@ -344,6 +349,14 @@ class SnapMosaic(QMainWindow):
                     self.config.set('hotkey', previous_hotkey)  # Revert in config
                     self.start_hotkey_listener()  # Restart with the old, working key
                     self.update_snap_button_text()  # Update button text back
+            
+            # Check if max_display_width changed and redraw grid if needed
+            if previous_max_width != self.config.get('max_display_width'):
+                self.redraw_grid()
+            
+            # Check if max_display_width changed and redraw grid if needed
+            if previous_max_width != self.config.get('max_display_width'):
+                self.redraw_grid()
 
     def open_about(self):
         dialog = AboutDialog(self.version, self)

@@ -75,6 +75,18 @@ class SettingsDialog(QDialog):
         self.sounds_enabled_checkbox.setChecked(self.config.get('sounds_enabled', True))
         layout.addWidget(self.sounds_enabled_checkbox)
 
+        # Max display width setting
+        max_width_layout = QHBoxLayout()
+        max_width_layout.addWidget(QLabel("Max display width:"))
+        self.max_width_spinbox = QSpinBox()
+        self.max_width_spinbox.setRange(100, 2000)
+        self.max_width_spinbox.setValue(self.config.get('max_display_width', 500))
+        self.max_width_spinbox.setSuffix(' px')
+        self.max_width_spinbox.setToolTip("Maximum width for displaying large captures (smaller images are not scaled)")
+        max_width_layout.addWidget(self.max_width_spinbox)
+        max_width_layout.addStretch()
+        layout.addLayout(max_width_layout)
+
         layout.addStretch()
         return general_tab
 
@@ -163,6 +175,7 @@ class SettingsDialog(QDialog):
         self.config.set('minimize_to_tray', self.minimize_to_tray_checkbox.isChecked())
         self.config.set('show_tray_notification', self.show_tray_notification_checkbox.isChecked())
         self.config.set('sounds_enabled', self.sounds_enabled_checkbox.isChecked())
+        self.config.set('max_display_width', self.max_width_spinbox.value())
 
         self.config.set('auto_save_enabled', self.auto_save_group.isChecked())
         self.config.set('auto_save_location', self.location_edit.text())

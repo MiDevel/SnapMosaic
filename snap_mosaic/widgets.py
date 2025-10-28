@@ -46,10 +46,11 @@ class HoverLabel(QLabel):
     save_requested = Signal(object)
     copy_requested = Signal(object)
 
-    def __init__(self, pixmap, parent=None):
+    def __init__(self, display_pixmap, original_pixmap=None, parent=None):
         super().__init__(parent)
-        self.setPixmap(pixmap)
-        self.setFixedSize(pixmap.size())
+        self.original_pixmap = original_pixmap if original_pixmap else display_pixmap
+        self.setPixmap(display_pixmap)
+        self.setFixedSize(display_pixmap.size())
         self.is_hovering = False
         self.is_saved = False
         self.hovered_icon = None # Can be 'save', 'delete', 'copy', or None

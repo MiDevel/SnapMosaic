@@ -64,8 +64,10 @@ SnapMosaic/
 
 3. **`HoverLabel` (`widgets.py`)**
    - Custom QLabel for displaying captured images
+   - Stores both display pixmap (scaled) and original pixmap (full resolution)
    - Interactive hover effects with save/delete buttons
    - Visual feedback for saved state (green checkmark)
+   - Always saves/copies the original full-resolution image
 
 4. **`HotkeyListener` (`hotkey.py`)**
    - Uses `pynput.keyboard.GlobalHotKeys` for reliable hotkey handling
@@ -151,10 +153,30 @@ if self.config.get('sounds_enabled', True):
 - Missing keys automatically get default values
 - Prevents crashes when new settings are added in updates
 
+### 7. Image Display Scaling
+
+**Problem solved:** Large screen captures (e.g., full screen on 4K monitors) made the grid unusable as individual images were larger than the application window.
+
+**Implementation:**
+- Configurable `max_display_width` setting (default 500px)
+- Images wider than max are scaled down for display only
+- Original full-resolution image is preserved separately
+- Save and copy operations always use the original full-resolution image
+- Smaller images are never upscaled
+- Aspect ratio is always preserved during scaling
+- Grid layout calculations use the display width
+
+**Key design:**
+- `HoverLabel` constructor accepts both `display_pixmap` and `original_pixmap`
+- `trigger_capture()` creates scaled display version if needed
+- `save_image()` and `copy_image_to_clipboard()` use `original_pixmap`
+- Changing the max width in settings triggers immediate grid redraw
+
 **Settings stored in `SnapMosaic.json`:**
 - `capture_region`: Last selected region (x, y, width, height)
 - `hotkey`: Global hotkey string
 - `auto_copy_to_clipboard`: Boolean
+- `max_display_width`: Maximum width (in pixels) for displaying large captures
 - `auto_save_*`: Auto-save configuration
 - `minimize_to_tray`, `show_tray_notification`: System tray options
 - `sounds_enabled`: Sound effects toggle
@@ -204,8 +226,9 @@ The `.spec` file is already configured to bundle all necessary assets.
 1. **playsound version pinned to 1.2.2** - Later versions have breaking changes
 2. **No video capture** - By design, only still images
 3. **Hotkey requires restart** - Changing hotkey requires stopping/starting the listener
-4. **Grid column calculation** - Fixed image width (200px), not user-configurable
+4. **Grid column calculation** - Based on display width of images
 5. **System tray on Linux** - May have limited support depending on desktop environment
+6. **Display scaling non-retroactive** - Changing max_display_width doesn't rescale existing captures (by design - avoids reprocessing)
 
 ## Things to NEVER Do
 
