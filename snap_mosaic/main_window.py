@@ -9,6 +9,8 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtGui import QPixmap, QIcon
 from PySide6.QtCore import Qt, QRect, QThread, QTimer
+import threading
+from playsound import playsound
 from datetime import datetime
 
 from snap_mosaic.config import Config
@@ -36,6 +38,8 @@ class SnapMosaic(QMainWindow):
         top_button_layout = QHBoxLayout()
         self.define_region_button = QPushButton("Define Region")
         self.snap_button = QPushButton() # Text set in update_snap_button_text
+        self.auto_button = QPushButton() # Text set in update_auto_button_text
+        self.auto_button.setCheckable(True)
         self.clear_button = QPushButton("Clear All")
 
         settings_icon = QIcon(resource_path('snap_mosaic/icons/settings.svg'))
@@ -46,10 +50,12 @@ class SnapMosaic(QMainWindow):
 
         top_button_layout.addWidget(self.define_region_button)
         top_button_layout.addWidget(self.snap_button)
+        top_button_layout.addWidget(self.auto_button)
         top_button_layout.addWidget(self.clear_button)
         top_button_layout.addStretch()
         top_button_layout.addWidget(self.settings_button)
         top_button_layout.addWidget(self.about_button)
+        main_layout.addLayout(top_button_layout)
 
         # Scroll Area for captures
         self.scroll_area = QScrollArea()
@@ -60,12 +66,12 @@ class SnapMosaic(QMainWindow):
         self.scroll_layout.setSpacing(10)
         self.scroll_layout.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignLeft)
 
-        main_layout.addLayout(top_button_layout)
         main_layout.addWidget(self.scroll_area)
 
         # --- Connections ---
         self.define_region_button.clicked.connect(self.define_region)
         self.snap_button.clicked.connect(self.trigger_capture)
+        self.auto_button.clicked.connect(self.toggle_auto_snap)
         self.clear_button.clicked.connect(self.clear_grid)
         self.settings_button.clicked.connect(self.open_settings)
         self.about_button.clicked.connect(self.open_about)
@@ -74,14 +80,21 @@ class SnapMosaic(QMainWindow):
         self.selection_overlay = None
         self.captured_widgets = []
         self.hotkey_listener = None
+        self.auto_snap_hotkey_listener = None
         self.is_quitting = False
+        self.is_auto_snapping = False
+        self.auto_snap_timer = QTimer(self)
+        self.auto_snap_timer.timeout.connect(self.trigger_capture)
         self.resize_timer = QTimer(self)
         self.resize_timer.setSingleShot(True)
         self.resize_timer.timeout.connect(self.redraw_grid)
 
+
+
         # Load config and start services
         self.load_app_config()
         self.start_hotkey_listener()
+        self.start_auto_snap_hotkey_listener()
         self.setup_tray_icon()
 
     def load_app_config(self):
@@ -93,9 +106,11 @@ class SnapMosaic(QMainWindow):
         else:
             self.capture_region = None
 
-        # Load hotkey and update button text
+        # Load hotkeys and update button text
         self.hotkey = self.config.get("hotkey", 'f7')
+        self.auto_snap_hotkey = self.config.get("auto_snap_hotkey", 'f8')
         self.update_snap_button_text()
+        self.update_auto_button_text()
 
     def save_capture_region(self):
         if self.capture_region:
@@ -115,6 +130,41 @@ class SnapMosaic(QMainWindow):
         self.hotkey_listener.hotkey_pressed.connect(self.trigger_capture)
         return self.hotkey_listener.start()
 
+    def start_auto_snap_hotkey_listener(self):
+        if self.auto_snap_hotkey_listener:
+            self.auto_snap_hotkey_listener.stop()
+
+        self.auto_snap_hotkey_listener = HotkeyListener(self.auto_snap_hotkey)
+        self.auto_snap_hotkey_listener.hotkey_pressed.connect(self.toggle_auto_snap)
+        return self.auto_snap_hotkey_listener.start()
+
+    def toggle_auto_snap(self):
+        if self.is_auto_snapping:
+            self.stop_auto_snap()
+        else:
+            self.start_auto_snap()
+
+    def start_auto_snap(self):
+        if not self.capture_region:
+            QMessageBox.warning(self, "No Region Defined", 
+                              "Please define a capture region first before starting Auto-Snap.")
+            self.auto_button.setChecked(False)
+            return
+
+        self.is_auto_snapping = True
+        self.auto_button.setChecked(True)
+        interval_sec = self.config.get('auto_snap_interval', 10)
+        self.auto_snap_timer.start(interval_sec * 1000)
+        self.update_auto_button_style()
+        print(f"Auto-Snap started with {interval_sec}s interval")
+
+    def stop_auto_snap(self):
+        self.is_auto_snapping = False
+        self.auto_button.setChecked(False)
+        self.auto_snap_timer.stop()
+        self.update_auto_button_style()
+        print("Auto-Snap stopped")
+
     def restore_geometry(self):
         geom_data = self.config.get('window_geometry')
         if geom_data:
@@ -129,6 +179,9 @@ class SnapMosaic(QMainWindow):
         self.move(QApplication.primaryScreen().geometry().center() - self.rect().center())
 
     def define_region(self):
+        # Stop auto-snap if running since we're clearing the grid and defining new region
+        if self.is_auto_snapping:
+            self.stop_auto_snap()
         self.clear_grid()
         self.hide()
         screen = QApplication.primaryScreen()
@@ -143,6 +196,33 @@ class SnapMosaic(QMainWindow):
         print(f"Capture region set to: {self.capture_region}")
         self.save_capture_region()
         self.show()
+
+    def play_sound(self, name):
+        """
+        Plays a sound using the 'playsound' library in a separate thread
+        to prevent UI blocking.
+        """
+        if not self.config.get('sounds_enabled', True):
+            return
+
+        sound_map = {
+            'snap': 'snap_mosaic/sounds/snap.wav',
+            'save': 'snap_mosaic/sounds/save.wav',
+            'clipboard': 'snap_mosaic/sounds/clipboard.wav',
+            'error': 'snap_mosaic/sounds/error.wav'
+        }
+
+        if name in sound_map:
+            file_path = resource_path(sound_map[name])
+            
+            # Run playsound in a separate thread to avoid blocking the GUI
+            try:
+                sound_thread = threading.Thread(target=playsound, args=(file_path,), daemon=True)
+                sound_thread.start()
+            except Exception as e:
+                print(f"Error playing sound '{name}': {e}")
+        else:
+            print(f"Warning: Sound '{name}' not defined in play_sound's sound_map.")
 
     def trigger_capture(self):
         if not self.capture_region:
@@ -167,13 +247,22 @@ class SnapMosaic(QMainWindow):
         if pixmap.isNull():
             return
 
+        self.play_sound('snap')
+
         # Auto-copy to clipboard if enabled
         if self.config.get('auto_copy_to_clipboard', False):
             QApplication.clipboard().setPixmap(pixmap)
             print("Image auto-copied to clipboard.")
 
-        # Create the image widget first
-        image_container = HoverLabel(pixmap)
+        # Scale for display if needed
+        max_width = self.config.get('max_display_width', 500)
+        display_pixmap = pixmap
+        if pixmap.width() > max_width:
+            display_pixmap = pixmap.scaledToWidth(max_width, Qt.TransformationMode.SmoothTransformation)
+            print(f"Scaled image from {pixmap.width()}x{pixmap.height()} to {display_pixmap.width()}x{display_pixmap.height()} for display")
+
+        # Create the image widget with both display and original pixmaps
+        image_container = HoverLabel(display_pixmap, pixmap)
         image_container.delete_requested.connect(self.delete_image)
         image_container.save_requested.connect(self.save_image)
         image_container.copy_requested.connect(self.copy_image_to_clipboard)
@@ -184,7 +273,7 @@ class SnapMosaic(QMainWindow):
         self.captured_widgets.insert(0, image_container)
         self.redraw_grid()
 
-    def save_image(self, hover_label):
+    def save_image(self, hover_label, quiet=False):
         file_path, _ = QFileDialog.getSaveFileName(
             self, 
             "Save Image", 
@@ -192,13 +281,15 @@ class SnapMosaic(QMainWindow):
             "PNG Images (*.png);;JPEG Images (*.jpg *.jpeg)"
         )
         if file_path:
-            pixmap = hover_label.pixmap()
+            pixmap = hover_label.original_pixmap
             if not file_path.lower().endswith(('.png', '.jpg', '.jpeg')):
                 file_path += '.png' # Default to png if no valid extension
             pixmap.save(file_path)
             print(f"Image saved to {file_path}")
             hover_label.is_saved = True
             hover_label.update() # Trigger repaint to show saved checkmark
+            if not quiet:
+                self.play_sound('save')
 
     def delete_image(self, image_container):
         if image_container in self.captured_widgets:
@@ -207,11 +298,13 @@ class SnapMosaic(QMainWindow):
             print("Image removed.")
             QTimer.singleShot(0, self.redraw_grid)
 
-    def copy_image_to_clipboard(self, hover_label):
-        QApplication.clipboard().setPixmap(hover_label.pixmap())
+    def copy_image_to_clipboard(self, hover_label, quiet=False):
+        QApplication.clipboard().setPixmap(hover_label.original_pixmap)
+        if not quiet:
+            self.play_sound('clipboard')
         print("Image copied to clipboard.")
 
-    def auto_save_image(self, image_container):
+    def auto_save_image(self, image_container, quiet=False):
         if not self.config.get('auto_save_enabled'):
             return
 
@@ -219,7 +312,7 @@ class SnapMosaic(QMainWindow):
         prefix = self.config.get('auto_save_prefix')
         suffix_type = self.config.get('auto_save_suffix_type')
         img_format = self.config.get('auto_save_format')
-        pixmap = image_container.pixmap()
+        pixmap = image_container.original_pixmap
 
         try:
             os.makedirs(location, exist_ok=True)
@@ -279,30 +372,77 @@ class SnapMosaic(QMainWindow):
     def update_snap_button_text(self):
         self.snap_button.setText(f"Snap [{self.hotkey.upper()}]")
 
+    def update_auto_button_text(self):
+        self.auto_button.setText(f"Auto [{self.auto_snap_hotkey.upper()}]")
+
+    def update_auto_button_style(self):
+        if self.is_auto_snapping:
+            self.auto_button.setStyleSheet("""
+                QPushButton:checked {
+                    background-color: #4CAF50;
+                    color: white;
+                    font-weight: bold;
+                }
+            """)
+        else:
+            self.auto_button.setStyleSheet("")
+
     def open_settings(self):
         previous_hotkey = self.config.get('hotkey')
+        previous_auto_snap_hotkey = self.config.get('auto_snap_hotkey')
+        previous_max_width = self.config.get('max_display_width', 500)
+        previous_interval = self.config.get('auto_snap_interval', 10)
         dialog = SettingsDialog(self.config, self)
 
         if dialog.exec():
             new_hotkey = self.config.get('hotkey')
             if new_hotkey != previous_hotkey:
-                self.hotkey = new_hotkey  # Update instance variable
+                self.hotkey = new_hotkey
 
                 if self.start_hotkey_listener():
-                    # Success - config is already saved by the dialog
                     self.update_snap_button_text()
                     QMessageBox.information(self, "Hotkey Updated",
                                             f"The new hotkey '{self.hotkey}' is now active.")
                 else:
-                    # Failure
                     QMessageBox.warning(self, "Invalid Hotkey",
                                         f"Could not register the hotkey '{self.hotkey}'.\n"
                                         "It might be already in use by another application.\n"
                                         "Reverting to the previous hotkey.")
+                    self.play_sound('error')
                     self.hotkey = previous_hotkey
-                    self.config.set('hotkey', previous_hotkey)  # Revert in config
-                    self.start_hotkey_listener()  # Restart with the old, working key
-                    self.update_snap_button_text()  # Update button text back
+                    self.config.set('hotkey', previous_hotkey)
+                    self.start_hotkey_listener()
+                    self.update_snap_button_text()
+            
+            # Handle auto-snap hotkey changes
+            new_auto_snap_hotkey = self.config.get('auto_snap_hotkey')
+            if new_auto_snap_hotkey != previous_auto_snap_hotkey:
+                self.auto_snap_hotkey = new_auto_snap_hotkey
+
+                if self.start_auto_snap_hotkey_listener():
+                    self.update_auto_button_text()
+                    QMessageBox.information(self, "Auto-Snap Hotkey Updated",
+                                            f"The new auto-snap hotkey '{self.auto_snap_hotkey}' is now active.")
+                else:
+                    QMessageBox.warning(self, "Invalid Auto-Snap Hotkey",
+                                        f"Could not register the auto-snap hotkey '{self.auto_snap_hotkey}'.\n"
+                                        "It might be already in use by another application.\n"
+                                        "Reverting to the previous hotkey.")
+                    self.play_sound('error')
+                    self.auto_snap_hotkey = previous_auto_snap_hotkey
+                    self.config.set('auto_snap_hotkey', previous_auto_snap_hotkey)
+                    self.start_auto_snap_hotkey_listener()
+                    self.update_auto_button_text()
+            
+            # Handle interval changes while auto-snap is running
+            new_interval = self.config.get('auto_snap_interval', 10)
+            if new_interval != previous_interval and self.is_auto_snapping:
+                self.auto_snap_timer.setInterval(new_interval * 1000)
+                print(f"Auto-snap interval updated to {new_interval}s")
+            
+            # Check if max_display_width changed and redraw grid if needed
+            if previous_max_width != self.config.get('max_display_width'):
+                self.redraw_grid()
 
     def open_about(self):
         dialog = AboutDialog(self.version, self)
@@ -356,9 +496,14 @@ class SnapMosaic(QMainWindow):
         # Save window geometry
         geom = self.geometry()
         self.config.set('window_geometry', {'x': geom.x(), 'y': geom.y(), 'width': geom.width(), 'height': geom.height()})
-        # Stop hotkey listener
+        # Stop auto-snap if running
+        if self.is_auto_snapping:
+            self.stop_auto_snap()
+        # Stop hotkey listeners
         if self.hotkey_listener:
             self.hotkey_listener.stop()
+        if self.auto_snap_hotkey_listener:
+            self.auto_snap_hotkey_listener.stop()
         self.tray_icon.hide()
         QApplication.instance().quit()
 

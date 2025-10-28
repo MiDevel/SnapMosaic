@@ -7,7 +7,8 @@ a = Analysis(
     binaries=[],
     datas=[
         ('assets', 'assets'),
-        ('snap_mosaic/icons', 'snap_mosaic/icons')
+        ('snap_mosaic/icons', 'snap_mosaic/icons'),
+        ('snap_mosaic/sounds', 'snap_mosaic/sounds')
     ],
     hiddenimports=[],
     hookspath=[],

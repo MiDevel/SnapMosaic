@@ -1,2 +1,3 @@
 PySide6
 pynput
+playsound==1.2.2

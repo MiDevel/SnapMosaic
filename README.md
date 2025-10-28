@@ -2,24 +2,27 @@
 
 [<img src="https://github.com/MiDevel/SnapMosaic/blob/main/assets/SnapMosaic.png?raw=true" width="125"/>](image.png)
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) [![Version](https://img.shields.io/badge/version-1.10.5-blue.svg)](https://github.com/MiDevel/SnapMosaic/releases)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) [![Version](https://img.shields.io/badge/version-1.10.6-blue.svg)](https://github.com/MiDevel/SnapMosaic/releases)
 
 A simple and efficient screen capture and review utility, built with Python and PySide6.
 
 SnapMosaic allows you to define a specific region on your screen and capture it multiple times with a global hotkey. Captured images are displayed in a responsive grid, perfect for comparing screenshots, tracking changes, or creating step-by-step guides.
 
+![SnapMosaic Screenshot](https://github.com/MiDevel/SnapMosaic/blob/main/docs/snap-mosaic.png?raw=true)
+
 ## Features
 
--   **Define Capture Region**: Select any area of your screen to capture. The selected region is saved and remembered across sessions.
--   **Global Hotkey**: Use a system-wide hotkey (`F7` by default) to trigger a capture at any time.
--   **Configurable Hotkey**: Change the hotkey to your preference in the Settings menu.
--   **Image Grid**: View all your captures in a scrollable, responsive grid that adjusts to the window size.
--   **Image Management**: Hover over any image in the grid to reveal Copy, Save and Delete buttons. Saved images are marked with a checkmark.
--   **Auto-Copy to Clipboard**: The configuration allows each capture to be automatically copied to the clipboard.
--   **Auto-Save**: The configuration allows each capture to be automatically saved to a specified location as either PNG or JPG.
--   **Auto-Clear**: The grid automatically clears when you define a new region, ensuring all images in a session are the same size.
--   **System Tray Integration**: Close the app to the system tray to keep it running in the background. The tray icon provides a menu for quick access to key functions and can be configured to show/hide notifications.
--   **High-DPI Support**: Works correctly on multi-monitor and High-DPI setups.
+-   **Capture Region**: Define a persistent screen region for repeated captures.
+-   **Global Hotkey**: Trigger captures from any application using a system-wide, configurable hotkey (default `F7`).
+-   **Auto-Snap Mode**: Automatically capture at regular intervals with toggle hotkey (default `F8`) and configurable interval (default 10 seconds).
+-   **Responsive Image Grid**: View captures in a scrollable grid that dynamically adjusts to window size. Large images are automatically scaled for display while preserving full resolution for save/copy operations.
+-   **Image Management**: Copy, save, or delete captures directly from the grid. A visual indicator marks saved images.
+-   **Automated Workflow**:
+    -   **Auto-Copy**: Automatically copy new captures to the clipboard.
+    -   **Auto-Save**: Automatically save new captures to a specified directory with configurable naming and format (PNG/JPG).
+-   **System Tray Mode**: Run the application discreetly in the system tray with a context menu for quick actions.
+-   **Sound Notifications**: Optional audio feedback for capture, save, and copy events.
+-   **High-DPI Aware**: Ensures distortion-free captures on multi-monitor and High-DPI displays.
 
 ## Getting Started
 
@@ -61,6 +64,37 @@ Once the dependencies are installed, you can run the application directly:
 ```bash
 python main.py
 ```
+
+### Quick Start Guide
+
+1. **Define a Capture Region**: Click "Define Region" and drag to select the area you want to capture repeatedly.
+
+2. **Manual Capture**: 
+   - Click the "Snap [F7]" button, or
+   - Press `F7` (or your configured hotkey) from any application
+
+3. **Auto-Snap Mode** (New!):
+   - Click the "Auto [F8]" button or press `F8` to start automatic captures
+   - The button turns green when active
+   - Captures will occur at your configured interval (default: 10 seconds)
+   - Click/press again to stop
+
+4. **Manage Your Captures**:
+   - **Hover** over any image to reveal action buttons
+   - **Copy**: Click the clipboard icon to copy to clipboard
+   - **Save**: Click the save icon to save to a file
+   - **Delete**: Click the X icon to remove from grid
+
+5. **Configure Settings**: Click "Settings" to customize:
+   - **General**: Hotkeys, clipboard behavior, display width, sounds, system tray
+   - **Auto-Snap**: Toggle hotkey and capture interval
+   - **Auto-Save**: Automatic file saving with custom naming and formats
+
+### Tips
+
+- **Large Captures**: Images wider than the configured max display width (default 500px) are automatically scaled down in the grid for easier viewing, but full resolution is always preserved for save/copy operations.
+- **Auto-Save Integration**: When Auto-Snap mode is active and Auto-Save is enabled, all captures are automatically saved to your configured location.
+- **System Tray**: Configure the app to minimize to system tray instead of closing, keeping hotkeys active in the background.
 
 ## Building an Executable
 
