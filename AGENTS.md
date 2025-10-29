@@ -333,6 +333,26 @@ The `.spec` file is already configured to bundle all necessary assets.
 
 **Important:** When adding new features, always update ROADMAP.md to mark completed items and add new planned features based on user feedback.
 
+## Changelog Maintenance
+
+All significant user-facing changes, feature additions, or bug fixes must be documented in `CHANGELOG.md`. The file follows the format from [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
+
+**Workflow:**
+1.  Before committing changes, add a concise, one-line entry to the `## [Unreleased]` section of `CHANGELOG.md`.
+2.  Prefix the entry with one of the following categories: `Added`, `Changed`, `Deprecated`, `Removed`, `Fixed`, `Security`.
+3.  When preparing a new release, update the `[Unreleased]` heading to the new version number and date (e.g., `## [2.1.0] - 2025-10-30`), and create a new `## [Unreleased]` section at the top.
+
+**Example:**
+```markdown
+## [Unreleased]
+
+### Fixed
+- Corrected an issue where the app would crash on invalid image data.
+
+### Added
+- Implemented the new auto-save feature.
+```
+
 ## Version Information
 
 - Version string is stored in `snap_mosaic/__init__.py` as `__version__`
