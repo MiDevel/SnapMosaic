@@ -110,6 +110,7 @@ SnapMosaic supports keyboard shortcuts for efficient workflow:
 - **System Tray**: Configure the app to minimize to system tray instead of closing, keeping hotkeys active in the background.
 - **Keyboard Power User**: Hover over an image and use `Ctrl+S`, `Ctrl+C`, or `Delete` for quick actions without clicking.
 
+
 ## Building an Executable
 
 This project uses PyInstaller to create a standalone executable. The recommended way to build is by using the provided `SnapMosaic.spec` file, which contains the correct build configurations.
@@ -125,6 +126,31 @@ This project uses PyInstaller to create a standalone executable. The recommended
     ```
 
 3.  **Find your application** in the `dist` folder that PyInstaller creates.
+
+
+## Symlink Setup for AI Instruction Files
+
+This repo uses a single source of truth for AI agent instructions: AGENTS.md. To support multiple CLI engines (e.g., GEMINI.md, CLAUDE.md), symlinks are used.
+
+### Setup Instructions
+Linux/macOS
+```
+ln -s AGENTS.md GEMINI.md
+ln -s AGENTS.md CLAUDE.md
+```
+
+Windows (Git Bash or WSL recommended)
+```
+ln -s AGENTS.md GEMINI.md
+ln -s AGENTS.md CLAUDE.md
+```
+
+Windows (PowerShell with Developer Mode enabled)
+```
+New-Item -ItemType SymbolicLink -Path "GEMINI.md" -Target "AGENTS.md"
+New-Item -ItemType SymbolicLink -Path "CLAUDE.md" -Target "AGENTS.md"
+```
+
 
 ## Contributing
 
